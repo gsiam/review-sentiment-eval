@@ -11,33 +11,43 @@ A testing framework for evaluating Claude Sonnet's summarization capabilities, f
 ## Architecture
 
 ```mermaid
-graph TB
-    subgraph "Test Layer"
+graph TD
+    subgraph "System Under Test"
+        S[Summarizer<br/>Claude Sonnet]
+    end
+
+    subgraph "Testing Tools (Assess the SUT)"
+        E[FaithfulnessEvaluator<br/>Hallucination scoring]
+        R[RobustnessChecker<br/>Prompt injection probes]
+    end
+
+    subgraph "Test Suite"
         UT[Unit Tests<br/>mocked, fast]
         IT[Integration Tests<br/>real API]
     end
 
-    subgraph "Core Modules"
-        S[Summarizer<br/>Claude Sonnet API]
-        E[FaithfulnessEvaluator<br/>Ragas wrapper]
-        R[RobustnessChecker<br/>Injection testing]
-    end
-
-    subgraph "External"
+    subgraph "External Services"
         API[Claude API]
-        RAGAS[Ragas Library]
+        RAGAS[Ragas LLM judge]
     end
 
-    UT --> S
-    UT --> E
-    UT --> R
-    IT --> S
-    IT --> E
-    IT --> R
+    subgraph "Test Data"
+        DATA[test_dataset.json<br/>sentiment labels]
+    end
+
+    UT -->|drive| E
+    IT -->|drive| E
+    UT -->|drive| R
+    IT -->|drive| R
+    IT -->|expected sentiment| DATA
+    E -->|scores outputs of| S
+    R -->|stresses behavior of| S
     S --> API
+    RAGAS --> API
     E --> RAGAS
-    E --> API
 ```
+
+Summary + sentiment come from the Summarizer's LLM output. Summary faithfulness is judged by Ragas (LLM call). Sentiment accuracy is checked against labels in `data/test_dataset.json`.
 
 ### Adaptive Robustness Testing
 
