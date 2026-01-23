@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-eval"
+version = "0.1.0"
+description = "LLM Evaluation Suite for Claude Sonnet summarization testing"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "langchain>=0.3.0",
+    "langchain-anthropic>=0.3.0",
+    "ragas>=0.2.0",
+    "pytest>=8.0.0",
+    "pytest-html>=4.2.0",
+    "pytest-asyncio>=0.24.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: marks unit tests (no API calls, fast)",
+    "integration: marks integration tests (real API calls, slow)",
+    "ragas_ci: marks tests that use Ragas evaluation (may be slow)",
+    "adversarial: marks tests for prompt injection robustness",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
