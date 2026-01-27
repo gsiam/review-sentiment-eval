@@ -89,25 +89,3 @@ llm-eval/
 3. **Ask before adding dependencies**: Check if existing tools can solve the problem
 4. **Run unit tests after changes**: `pytest -m unit` is fast, use it often
 5. **Keep tests readable**: Logic in checker/evaluator, tests just call and assert
-
-## Current Focus / TODOs
-
-- [x] Implement adaptive robustness testing
-- [x] Add unit tests with mocks for RobustnessChecker and FaithfulnessEvaluator
-- [x] Add Given-When-Then structure to unit tests
-- [x] Add Given-When-Then structure to integration tests
-- [ ] Check coverage of unit tests
-- [ ] Check coverage of integration tests
-- [ ] Refactor `TestEndToEnd` tests to remove logic from there
-- [ ] Check whether we're happy with the convention for test naming
-- [ ] Consider whether we need `reports`
-- [ ] Improve diagrams (maybe make them with NanoBanana)
-- [ ] Add logging
-- [ ] Fix Ragas deprecation warnings (use `ragas.metrics.collections` instead)
-  - [ ] use `llm_factory` instead of `LangchainLLMWrapper`
-- [ ] Add a **Custom Judge** (using LangChain) that checks a specific business rule.
-  - *The Rule:* "Summaries must never use the first person ('I think...')."
-  - *The Implementation:* Write a simple custom evaluator in Python.
-  - *Why:* It proves I can build my own metrics (Level 2) when the off-the-shelf libraries (Ragas) aren't enough.
-- [ ] Discuss in the README current limitations with the current evaluation solution.
-- [ ] Consider adding more adversarial injection patterns
