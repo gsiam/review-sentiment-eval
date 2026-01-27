@@ -96,14 +96,15 @@ llm-eval/
 - [x] Add unit tests with mocks for RobustnessChecker and FaithfulnessEvaluator
 - [x] Add Given-When-Then structure to unit tests
 - [x] Add Given-When-Then structure to integration tests
-- [ ] Refactor `TestEndToEnd` tests to remove logic from there
 - [ ] Check coverage of unit tests
 - [ ] Check coverage of integration tests
+- [ ] Refactor `TestEndToEnd` tests to remove logic from there
 - [ ] Check whether we're happy with the convention for test naming
 - [ ] Consider whether we need `reports`
 - [ ] Improve diagrams (maybe make them with NanoBanana)
 - [ ] Add logging
 - [ ] Fix Ragas deprecation warnings (use `ragas.metrics.collections` instead)
+  - [ ] use `llm_factory` instead of `LangchainLLMWrapper`
 - [ ] Add a **Custom Judge** (using LangChain) that checks a specific business rule.
   - *The Rule:* "Summaries must never use the first person ('I think...')."
   - *The Implementation:* Write a simple custom evaluator in Python.
