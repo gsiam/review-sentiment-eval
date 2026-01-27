@@ -1,9 +1,12 @@
 """Summarizer module using LangChain and Claude Sonnet."""
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 from typing import Literal
+
+logger = logging.getLogger(__name__)
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -78,27 +81,110 @@ Do not include any other text before or after the JSON."""
     def _parse_response(self, raw_response: str) -> dict:
         """Parse the LLM response into structured data.
 
+        Tries three extraction strategies in order:
+        1. Direct JSON parse (pure JSON output)
+        2. Code-fenced JSON (```json ... ``` or ``` ... ```)
+        3. Balanced-brace extraction (JSON embedded in prose)
+
         Args:
             raw_response: The raw text response from the LLM.
 
         Returns:
             Dictionary with 'summary' and 'sentiment' keys.
         """
-        json_match = re.search(r"\{[^}]+\}", raw_response, re.DOTALL)
-        if json_match:
-            try:
-                parsed = json.loads(json_match.group())
-                sentiment = parsed.get("sentiment", "neutral").lower()
-                if sentiment not in ("positive", "negative", "neutral", "mixed"):
-                    sentiment = "neutral"
-                return {
-                    "summary": parsed.get("summary", raw_response),
-                    "sentiment": sentiment,
-                }
-            except json.JSONDecodeError:
-                pass
+        for extract in (
+            self._try_direct_json,
+            self._try_code_fence,
+            self._try_balanced_braces,
+        ):
+            candidate = extract(raw_response)
+            if candidate is not None:
+                return candidate
 
+        logger.warning(
+            "Failed to parse JSON from LLM response, falling back to raw text. "
+            "Response: %r",
+            raw_response,
+        )
         return {
             "summary": raw_response,
             "sentiment": "neutral",
         }
+
+    def _validate_parsed(self, parsed: dict) -> dict | None:
+        """Validate and normalize a parsed JSON dict.
+
+        Args:
+            parsed: The parsed JSON dictionary.
+
+        Returns:
+            Normalized dict with summary and sentiment, or None if invalid.
+        """
+        if not isinstance(parsed, dict) or "summary" not in parsed:
+            return None
+        sentiment = str(parsed.get("sentiment", "neutral")).lower()
+        if sentiment not in ("positive", "negative", "neutral", "mixed"):
+            sentiment = "neutral"
+        return {
+            "summary": parsed["summary"],
+            "sentiment": sentiment,
+        }
+
+    def _try_direct_json(self, text: str) -> dict | None:
+        """Try parsing the entire response as JSON."""
+        try:
+            return self._validate_parsed(json.loads(text.strip()))
+        except (json.JSONDecodeError, ValueError):
+            return None
+
+    def _try_code_fence(self, text: str) -> dict | None:
+        """Try extracting JSON from a code fence."""
+        match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+        if match:
+            try:
+                return self._validate_parsed(json.loads(match.group(1).strip()))
+            except (json.JSONDecodeError, ValueError):
+                pass
+        return None
+
+    def _try_balanced_braces(self, text: str) -> dict | None:
+        """Try extracting JSON by finding a balanced { ... } block."""
+        start = text.find("{")
+        if start == -1:
+            return None
+
+        depth = 0
+        in_string = False
+        escape_next = False
+
+        for i in range(start, len(text)):
+            ch = text[i]
+
+            if escape_next:
+                escape_next = False
+                continue
+
+            if ch == "\\":
+                escape_next = in_string
+                continue
+
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+                continue
+
+            if in_string:
+                continue
+
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return self._validate_parsed(
+                            json.loads(text[start:i + 1])
+                        )
+                    except (json.JSONDecodeError, ValueError):
+                        return None
+
+        return None
