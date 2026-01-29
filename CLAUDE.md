@@ -7,7 +7,7 @@ LLM Evaluation Suite for testing Claude Sonnet's summarization capabilities. The
 1. **Hallucinations** - Using Ragas Faithfulness metric (threshold 0.7)
 2. **Prompt Injection Vulnerability** - Using adaptive behavioral analysis that compares baseline vs adversarial outputs
 
-Main modules: `summarizer.py` (LLM calls), `evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
+Main modules: `summarizer.py` (LLM calls + response parsing), `evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
 
 ## How to Run Things
 
@@ -23,27 +23,27 @@ cp .env.example .env
 # Add your ANTHROPIC_API_KEY to .env
 
 # Tests
-pytest -m unit              # Unit tests only (~0.05s, no API)
-pytest -m integration       # Integration tests (~3-5 min, real API)
-pytest -v --html=reports/test_report.html  # All tests with HTML report
+pytest -m unit              # Unit tests only (fast, no API)
+pytest -m integration       # Integration tests (real API)
+pytest -v --log-cli-level=WARNING  # Show warnings (e.g. parse failures)
 ```
 
 ## Architecture Notes
 
-```
+```text
 llm-eval/
 ├── src/llm_eval/
-│   ├── summarizer.py        # Claude Sonnet summarization + sentiment
-│   ├── evaluator.py         # Ragas Faithfulness wrapper
-│   └── robustness_checker.py # Adaptive injection testing
+│   ├── summarizer.py          # Claude Sonnet summarization + sentiment
+│   ├── evaluator.py           # Ragas Faithfulness wrapper
+│   └── robustness_checker.py  # Adaptive injection testing
 ├── tests/
-│   ├── conftest.py          # Fixtures, parametrization
-│   ├── test_summarization.py      # Integration tests (real API)
-│   ├── test_robustness_checker_unit.py  # Unit tests (mocked)
-│   └── test_evaluator_unit.py     # Unit tests (mocked)
-├── data/
-│   └── test_dataset.json    # 5 normal + 2 adversarial cases
-└── reports/                 # HTML test reports
+│   ├── conftest.py            # Fixtures, parametrization
+│   ├── test_summarization.py  # Integration tests (real API)
+│   ├── test_summarizer_unit.py     # Unit tests for response parsing
+│   ├── test_robustness_checker_unit.py
+│   └── test_evaluator_unit.py
+└── data/
+    └── test_dataset.json      # 5 normal + 2 adversarial cases
 ```
 
 ### Key Design Decisions
@@ -61,31 +61,28 @@ llm-eval/
    - Unit tests: Mock the summarizer, test logic only (fast, free)
    - Integration tests: Real API calls (slow, costs money)
 
-## Conventions
+4. **Robust Response Parsing**: `_parse_response` tries three strategies in order:
+   - Direct JSON parse (pure JSON output)
+   - Code-fenced JSON (` ```json ... ``` `)
+   - Balanced-brace extraction (JSON embedded in prose, handles nested `{}`)
 
-### Code Style
+   Logs a warning on fallback to make parse failures visible.
+
+## Standards
+
+Follow the conventions in:
+
+- [Python Style Guide](.standards/python/style-guide.md)
+- [Python Testing](.standards/python/testing.md)
+- [AI Workflow Rules](.standards/ai-workflow.md)
+
+### Project-Specific
 
 - Python 3.10+
-- Use dataclasses for result types
-- Type hints everywhere
-- Docstrings with Args/Returns sections
-
-### Test Style
-
-- Use Given-When-Then structure (just keywords, no explanations)
 - Pytest markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.adversarial`
-- Keep test logic minimal - complex logic goes in the checker/evaluator classes
 
 ### Dependencies
 
 - `langchain-anthropic` for Claude API
 - `ragas` for Faithfulness metric
-- `pytest-html` for reports
-
-## AI Workflow Rules
-
-1. **Read before edit**: Always read files before modifying them
-2. **Prefer small diffs**: Make targeted changes, don't rewrite entire files
-3. **Ask before adding dependencies**: Check if existing tools can solve the problem
-4. **Run unit tests after changes**: `pytest -m unit` is fast, use it often
-5. **Keep tests readable**: Logic in checker/evaluator, tests just call and assert
+- `pytest` for testing

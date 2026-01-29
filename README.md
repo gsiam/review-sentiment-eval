@@ -82,6 +82,7 @@ llm-eval/
 ├── tests/
 │   ├── conftest.py            # Fixtures, parametrization
 │   ├── test_summarization.py  # Integration tests (real API)
+│   ├── test_summarizer_unit.py        # Unit tests for response parsing
 │   ├── test_robustness_checker_unit.py
 │   └── test_evaluator_unit.py
 └── data/
@@ -112,12 +113,12 @@ pytest -m unit
 # Integration tests (requires API key, slower)
 pytest -m integration
 
-# All tests with HTML report
-pytest -v --html=reports/test_report.html
+# All tests
+pytest -v
 ```
 
 ## Dependencies
 
 - `langchain-anthropic` - Claude API integration
 - `ragas` - Faithfulness metric for hallucination detection
-- `pytest` / `pytest-html` - Testing framework and reports
+- `pytest` - Testing framework
