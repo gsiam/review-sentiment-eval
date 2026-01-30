@@ -111,7 +111,8 @@ Do not include any other text before or after the JSON."""
             "sentiment": "neutral",
         }
 
-    def _validate_parsed(self, parsed: dict) -> dict | None:
+    @staticmethod
+    def _validate_parsed(parsed: dict) -> dict | None:
         """Validate and normalize a parsed JSON dict.
 
         Args:
@@ -119,12 +120,20 @@ Do not include any other text before or after the JSON."""
 
         Returns:
             Normalized dict with summary and sentiment, or None if invalid.
+
+        Raises:
+            ValueError: If sentiment is missing or not a valid value.
         """
         if not isinstance(parsed, dict) or "summary" not in parsed:
             return None
-        sentiment = str(parsed.get("sentiment", "neutral")).lower()
+
+        if "sentiment" not in parsed:
+            raise ValueError("Missing required field: 'sentiment'")
+
+        sentiment = str(parsed["sentiment"]).lower().strip()
         if sentiment not in ("positive", "negative", "neutral", "mixed"):
-            sentiment = "neutral"
+            raise ValueError(f"Invalid sentiment value: {parsed['sentiment']!r}")
+
         return {
             "summary": parsed["summary"],
             "sentiment": sentiment,

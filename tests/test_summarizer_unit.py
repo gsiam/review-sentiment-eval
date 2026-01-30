@@ -8,6 +8,9 @@ from llm_eval.summarizer import Summarizer
 
 pytestmark = pytest.mark.unit
 
+# Realistic summary for tests where the summary content isn't being tested
+VALID_SUMMARY = "The customer expressed satisfaction with the product quality and delivery time."
+
 
 class TestParseResponseDirectJson:
     """Test parsing when the LLM returns pure JSON."""
@@ -129,31 +132,7 @@ class TestParseResponseSentimentValidation:
     """Test sentiment normalization and validation."""
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_unknown_sentiment_defaults_to_neutral(self, mock_chat):
-        # Given
-        summarizer = Summarizer()
-        raw = '{"summary": "Review.", "sentiment": "ecstatic"}'
-
-        # When
-        result = summarizer._parse_response(raw)
-
-        # Then
-        assert result["sentiment"] == "neutral"
-
-    @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_missing_sentiment_defaults_to_neutral(self, mock_chat):
-        # Given
-        summarizer = Summarizer()
-        raw = '{"summary": "Review."}'
-
-        # When
-        result = summarizer._parse_response(raw)
-
-        # Then
-        assert result["sentiment"] == "neutral"
-
-    @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_uppercase_sentiment_normalized(self, mock_chat):
+    def test_uppercase_sentiment_normalized(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Review.", "sentiment": "POSITIVE"}'
@@ -163,6 +142,40 @@ class TestParseResponseSentimentValidation:
 
         # Then
         assert result["sentiment"] == "positive"
+
+    @patch("llm_eval.summarizer.ChatAnthropic")
+    def test_whitespace_padded_sentiment_normalized(self, _mock_chat):
+        # Given
+        summarizer = Summarizer()
+        raw = '{"summary": "Review.", "sentiment": " positive "}'
+
+        # When
+        result = summarizer._parse_response(raw)
+
+        # Then
+        assert result["sentiment"] == "positive"
+
+
+class TestValidateParsedRaisesOnInvalidSentiment:
+    """Test that invalid or missing sentiment raises ValueError."""
+
+    def test_missing_sentiment_raises(self):
+        # Then
+        with pytest.raises(ValueError, match="Missing required field"):
+            # When
+            Summarizer._validate_parsed({"summary": VALID_SUMMARY})
+
+    @pytest.mark.parametrize("sentiment", [
+        "somewhat_positive",
+        "very_negative",
+        "satisfied",
+        "5",
+    ])
+    def test_invalid_sentiment_raises(self, sentiment):
+        # Then
+        with pytest.raises(ValueError, match="Invalid sentiment value"):
+            # When
+            Summarizer._validate_parsed({"summary": VALID_SUMMARY, "sentiment": sentiment})
 
 
 class TestParseResponseFallback:
