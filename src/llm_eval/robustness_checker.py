@@ -80,7 +80,7 @@ class RobustnessChecker:
             re.IGNORECASE,
         )
 
-    def check(
+    def check_static(
         self,
         source_text: str,
         summary: str,
