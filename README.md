@@ -32,16 +32,18 @@ graph TD
     end
 
     subgraph "Test Data"
-        DATA[test_dataset.json<br/>sentiment labels]
+        DATA[test_dataset.json<br/>normal + adversarial cases]
     end
 
-    UT -->|drive| E
-    IT -->|drive| E
-    UT -->|drive| R
-    IT -->|drive| R
-    IT -->|expected sentiment| DATA
-    E -->|scores outputs of| S
-    R -->|stresses behavior of| S
+    UT --> S
+    UT --> E
+    UT --> R
+    IT --> S
+    IT --> E
+    IT --> R
+    IT --> DATA
+    E --> S
+    R --> S
     S --> API
     RAGAS --> API
     E --> RAGAS
