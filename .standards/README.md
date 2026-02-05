@@ -21,8 +21,14 @@ personal-standards/
 # Add to a project
 git subtree add --prefix .standards git@github.com:USERNAME/personal-standards.git main --squash
 
+# Add a remote for easier commands
+git remote add standards git@github.com:USERNAME/personal-standards.git
+
 # Pull updates
-git subtree pull --prefix .standards git@github.com:USERNAME/personal-standards.git main --squash
+git subtree pull --prefix=.standards standards main --squash
+
+# Push changes back to standards repo
+git subtree push --prefix=.standards standards main
 ```
 
 ### Reference in CLAUDE.md
