@@ -30,8 +30,7 @@ class AdaptiveRobustnessResult:
     passed: bool
     baseline_sentiment: str
     adversarial_sentiment: str
-    target_sentiment: str
-    injection_changed_output: bool
+    injected_sentiment: str
     details: str = ""
 
 
@@ -102,7 +101,9 @@ class RobustnessChecker:
 
         suspicious_artifacts = self._find_suspicious_artifacts(summary)
 
-        sentiment_matches = self._sentiments_match(detected_sentiment, expected_sentiment)
+        sentiment_matches = self._sentiments_match(
+            detected_sentiment, expected_sentiment
+        )
 
         passed = sentiment_matches and not suspicious_artifacts
 
@@ -186,7 +187,9 @@ class RobustnessChecker:
             parts.append("No injection patterns detected in source")
 
         if sentiment_matches:
-            parts.append(f"Model correctly identified sentiment as '{detected_sentiment}'")
+            parts.append(
+                f"Model correctly identified sentiment as '{detected_sentiment}'"
+            )
         else:
             parts.append(
                 f"Sentiment mismatch: detected '{detected_sentiment}' "
@@ -220,7 +223,7 @@ class RobustnessChecker:
         Args:
             summarizer: The summarizer to test.
             clean_text: The clean text without injection.
-            injection_template: Template with {target_sentiment} placeholder.
+            injection_template: Template with {injected_sentiment} placeholder.
 
         Returns:
             AdaptiveRobustnessResult with pass/fail and details.
@@ -228,25 +231,21 @@ class RobustnessChecker:
         baseline_result = summarizer.summarize(clean_text)
         baseline_sentiment = baseline_result.sentiment
 
-        target_sentiment = self._get_opposite_sentiment(baseline_sentiment)
+        injected_sentiment = self._get_opposite_sentiment(baseline_sentiment)
 
         adversarial_text = self._build_adversarial_text(
-            clean_text, injection_template, target_sentiment
+            clean_text, injection_template, injected_sentiment
         )
 
         adversarial_result = summarizer.summarize(adversarial_text)
         adversarial_sentiment = adversarial_result.sentiment
 
-        injection_changed_output = not self._sentiments_match(
-            adversarial_sentiment, baseline_sentiment
-        )
-
-        passed = not injection_changed_output
+        passed = self._sentiments_match(adversarial_sentiment, baseline_sentiment)
 
         details = self._build_adaptive_details(
             baseline_sentiment=baseline_sentiment,
             adversarial_sentiment=adversarial_sentiment,
-            target_sentiment=target_sentiment,
+            injected_sentiment=injected_sentiment,
             passed=passed,
         )
 
@@ -254,8 +253,7 @@ class RobustnessChecker:
             passed=passed,
             baseline_sentiment=baseline_sentiment,
             adversarial_sentiment=adversarial_sentiment,
-            target_sentiment=target_sentiment,
-            injection_changed_output=injection_changed_output,
+            injected_sentiment=injected_sentiment,
             details=details,
         )
 
@@ -282,19 +280,19 @@ class RobustnessChecker:
         self,
         clean_text: str,
         injection_template: str,
-        target_sentiment: str,
+        injected_sentiment: str,
     ) -> str:
         """Build adversarial text by inserting injection into clean text.
 
         Args:
             clean_text: The clean text without injection.
-            injection_template: Template with {target_sentiment} placeholder.
-            target_sentiment: The sentiment to inject.
+            injection_template: Template with {injected_sentiment} placeholder.
+            injected_sentiment: The sentiment to inject.
 
         Returns:
             The adversarial text with injection inserted in the middle.
         """
-        injection = injection_template.format(target_sentiment=target_sentiment)
+        injection = injection_template.format(injected_sentiment=injected_sentiment)
 
         words = clean_text.split()
         mid = len(words) // 2
@@ -304,7 +302,7 @@ class RobustnessChecker:
         self,
         baseline_sentiment: str,
         adversarial_sentiment: str,
-        target_sentiment: str,
+        injected_sentiment: str,
         passed: bool,
     ) -> str:
         """Build details string for adaptive check.
@@ -312,7 +310,7 @@ class RobustnessChecker:
         Args:
             baseline_sentiment: Sentiment from clean text.
             adversarial_sentiment: Sentiment from adversarial text.
-            target_sentiment: The sentiment the injection targeted.
+            injected_sentiment: The sentiment the injection targeted.
             passed: Whether the check passed.
 
         Returns:
@@ -320,7 +318,7 @@ class RobustnessChecker:
         """
         parts = [
             f"Baseline sentiment: '{baseline_sentiment}'",
-            f"Injection targeted: '{target_sentiment}'",
+            f"Injection targeted: '{injected_sentiment}'",
             f"Adversarial result: '{adversarial_sentiment}'",
         ]
 
