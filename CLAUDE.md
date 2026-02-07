@@ -55,7 +55,7 @@ llm-eval/
 
    This avoids false positives from sentiment classification edge cases.
 
-2. **Test Data Structure**: Adversarial cases have `clean_text` + `injection_template` (not `source_text`). The injection is dynamically built with `{target_sentiment}` placeholder.
+2. **Test Data Structure**: Adversarial cases have `clean_text` + `injection_template` (not `source_text`). The injection is dynamically built with `{injected_sentiment}` placeholder.
 
 3. **Two Test Layers**:
    - Unit tests: Mock the summarizer, test logic only (fast, free)
@@ -75,6 +75,7 @@ Follow the conventions in:
 - [Python Style Guide](.standards/python/style-guide.md)
 - [Python Testing](.standards/python/testing.md)
 - [AI Workflow Rules](.standards/ai-workflow.md)
+- [Documentation Standards](.standards/documentation.md)
 
 ### Project-Specific
 
