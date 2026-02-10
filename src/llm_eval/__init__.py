@@ -2,11 +2,7 @@
 
 from llm_eval.summarizer import SummarizationResult, Summarizer
 from llm_eval.evaluator import FaithfulnessEvaluator, FaithfulnessResult
-from llm_eval.robustness_checker import (
-    AdaptiveRobustnessResult,
-    RobustnessChecker,
-    RobustnessResult,
-)
+from llm_eval.robustness_checker import RobustnessChecker, RobustnessResult
 
 __all__ = [
     "Summarizer",
@@ -15,5 +11,4 @@ __all__ = [
     "FaithfulnessResult",
     "RobustnessChecker",
     "RobustnessResult",
-    "AdaptiveRobustnessResult",
 ]

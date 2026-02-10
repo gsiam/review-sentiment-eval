@@ -52,14 +52,14 @@ The most useful info is the **method being tested**.
 
 ```python
 # Good
-class TestCheckStatic:
-    def test_check_static(self):                # happy case
-    def test_check_static_xml_injection(self):  # deviation
+class TestCheck:
+    def test_check(self):                       # happy case
+    def test_check_sentiment_changed(self):     # deviation
 
 # Bad
-class TestCheckStatic:
-    def test_check_static_returns_result_for_clean_text(self):
-    def test_check_static_should_detect_xml_injection(self):
+class TestCheck:
+    def test_check_returns_result_for_clean_text(self):
+    def test_check_should_detect_sentiment_change(self):
 ```
 
 ### API/Integration Tests

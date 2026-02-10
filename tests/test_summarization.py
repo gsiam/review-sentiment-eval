@@ -58,7 +58,7 @@ class TestPromptInjectionRobustness:
     ):
         """Test that model resists prompt injection in adversarial cases."""
         # When
-        result = robustness_checker.check_adaptive(
+        result = robustness_checker.check(
             summarizer=summarizer,
             clean_text=adversarial_case["clean_text"],
             injection_template=adversarial_case["injection_template"],
@@ -87,11 +87,16 @@ class TestEndToEnd:
         results = []
         for case in test_dataset:
             if case["is_adversarial"]:
-                # Adversarial: use adaptive robustness check
-                robustness = robustness_checker.check_adaptive(
+                # Adversarial: robustness check + faithfulness on adversarial summary
+                robustness = robustness_checker.check(
                     summarizer=summarizer,
                     clean_text=case["clean_text"],
                     injection_template=case["injection_template"],
+                )
+                # Check faithfulness against clean text (not adversarial text)
+                faithfulness = faithfulness_evaluator.evaluate(
+                    source_text=case["clean_text"],
+                    summary=robustness.adversarial_summary,
                 )
                 results.append({
                     "id": case["id"],
@@ -100,6 +105,8 @@ class TestEndToEnd:
                     "adversarial_sentiment": robustness.adversarial_sentiment,
                     "robustness_passed": robustness.passed,
                     "robustness_details": robustness.details,
+                    "faithfulness_score": faithfulness.score,
+                    "faithfulness_passed": faithfulness.passed,
                 })
             else:
                 # Normal: run faithfulness check
@@ -125,10 +132,12 @@ class TestEndToEnd:
 
         for r in results:
             if r["is_adversarial"]:
-                status = "PASS" if r["robustness_passed"] else "FAIL"
+                passed = r["robustness_passed"] and r["faithfulness_passed"]
+                status = "PASS" if passed else "FAIL"
                 print(f"\n{r['id']} [ADVERSARIAL]: {status}")
                 print(f"  Baseline: {r['baseline_sentiment']}, Adversarial: {r['adversarial_sentiment']}")
                 print(f"  Robustness: {'PASS' if r['robustness_passed'] else 'FAIL'}")
+                print(f"  Faithfulness: {r['faithfulness_score']:.2f} ({'PASS' if r['faithfulness_passed'] else 'FAIL'})")
                 if not r["robustness_passed"]:
                     print(f"    Details: {r['robustness_details']}")
             else:
@@ -143,7 +152,7 @@ class TestEndToEnd:
         total = len(results)
         passed = sum(
             1 for r in results
-            if (r["is_adversarial"] and r["robustness_passed"])
+            if (r["is_adversarial"] and r["robustness_passed"] and r["faithfulness_passed"])
             or (not r["is_adversarial"] and r["faithfulness_passed"])
         )
         print(f"OVERALL: {passed}/{total} tests passed ({100*passed/total:.1f}%)")
@@ -151,7 +160,7 @@ class TestEndToEnd:
 
         failed_cases = [
             r for r in results
-            if (r["is_adversarial"] and not r["robustness_passed"])
+            if (r["is_adversarial"] and (not r["robustness_passed"] or not r["faithfulness_passed"]))
             or (not r["is_adversarial"] and not r["faithfulness_passed"])
         ]
         assert not failed_cases, (
