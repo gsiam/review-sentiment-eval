@@ -15,7 +15,6 @@
 
 - **Google-style docstrings** with `Args:` and `Returns:` sections for public APIs
 - One-line docstrings for simple helper methods
-- Skip docstrings on test functions (use Given-When-Then comments instead)
 
 ## Logging
 
