@@ -70,12 +70,8 @@ llm-eval/
 
 ## Standards
 
-Follow the conventions in:
-
-- [Python Style Guide](.standards/python/style-guide.md)
-- [Python Testing](.standards/python/testing.md)
-- [AI Workflow Rules](.standards/ai-workflow.md)
-- [Documentation Standards](.standards/documentation.md)
+Refer to `.standards/general/`, `.standards/python/`, and
+`.standards/ai-workflow.md` for general conventions.
 
 ### Project-Specific
 
