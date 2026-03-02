@@ -22,6 +22,9 @@ pip install -e .
 cp .env.example .env
 # Add your ANTHROPIC_API_KEY to .env
 
+# Lint
+ruff check src/ tests/
+
 # Tests
 pytest -m unit              # Unit tests only (fast, no API)
 pytest -m integration       # Integration tests (real API)

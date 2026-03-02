@@ -6,10 +6,10 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-logger = logging.getLogger(__name__)
-
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
+
+logger = logging.getLogger(__name__)
 
 
 SentimentType = Literal["positive", "negative", "neutral", "mixed"]
