@@ -16,7 +16,7 @@ Main modules: `summarizer.py` (LLM calls + response parsing), `evaluator.py` (Ra
 cd llm-eval
 python3.10 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[dev]"   # includes ruff, mypy, pytest-cov
 
 # Environment
 cp .env.example .env
@@ -57,6 +57,8 @@ llm-eval/
    - Compare: if output changed → injection succeeded (fail)
 
    This avoids false positives from sentiment classification edge cases.
+   Adversarial cases also run Faithfulness to catch content manipulation
+   (e.g., injected text leaking into the summary).
 
 2. **Test Data Structure**: Adversarial cases have `clean_text` + `injection_template` (not `source_text`). The injection is dynamically built with `{injected_sentiment}` placeholder.
 
@@ -73,8 +75,8 @@ llm-eval/
 
 ## Standards
 
-Refer to `.standards/general/`, `.standards/python/`, and
-`.standards/ai-workflow.md` for general conventions.
+Refer to `.standards/python/`, `.standards/ai-workflow.md`,
+and `.standards/documentation.md` for general conventions.
 
 ### Project-Specific
 
