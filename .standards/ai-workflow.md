@@ -5,7 +5,7 @@
 - **Small diffs** - targeted changes, don't rewrite entire files
 - **TDD flow** - write/update tests first, then implement to make them pass
 - **Ask before adding dependencies** - check if existing tools can solve the problem first
-- **Check for linting errors after changes** - review diagnostics and fix issues before moving on
+- **Check for linting errors after changes** - review diagnostics in code, CI workflows, config files, and fix issues before moving on
 
 ## Code Changes
 
