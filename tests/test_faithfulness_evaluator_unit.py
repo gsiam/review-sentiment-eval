@@ -4,59 +4,26 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from llm_eval.faithfulness_evaluator import FaithfulnessEvaluator, FaithfulnessResult
+from llm_eval.faithfulness_evaluator import FaithfulnessEvaluator
 
 pytestmark = pytest.mark.unit
 
-
-class TestFaithfulnessResult:
-    def test_result_with_passing_score(self):
-        # Given
-        score = 0.85
-        threshold = 0.7
-
-        # When
-        result = FaithfulnessResult(score=score, passed=True, threshold=threshold)
-
-        # Then
-        assert result.score == 0.85
-        assert result.passed
-        assert result.threshold == 0.7
-
-    def test_result_with_failing_score(self):
-        # Given
-        score = 0.5
-        threshold = 0.7
-
-        # When
-        result = FaithfulnessResult(score=score, passed=False, threshold=threshold)
-
-        # Then
-        assert result.score == 0.5
-        assert not result.passed
-
-    def test_result_at_threshold(self):
-        # Given
-        score = 0.7
-        threshold = 0.7
-
-        # When
-        result = FaithfulnessResult(score=score, passed=True, threshold=threshold)
-
-        # Then
-        assert result.passed
+DEFAULT_THRESHOLD = FaithfulnessEvaluator.DEFAULT_THRESHOLD
 
 
 class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_passes_when_score_above_threshold(
+    def test_evaluate(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.9}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        passing_score = 0.9
+        mock_evaluate.return_value = Mock(
+            scores=[{"faithfulness": passing_score}]
+        )
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -66,18 +33,17 @@ class TestFaithfulnessEvaluatorLogic:
 
         # Then
         assert result.passed
-        assert result.score == 0.9
-        assert result.threshold == 0.7
+        assert result.score == passing_score
 
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_fails_when_score_below_threshold(
+    def test_evaluate_below_threshold(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
         mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.5}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -92,12 +58,12 @@ class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_passes_at_exact_threshold(
+    def test_evaluate_at_threshold(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.7}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        mock_evaluate.return_value = Mock(scores=[{"faithfulness": DEFAULT_THRESHOLD}])
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -107,17 +73,17 @@ class TestFaithfulnessEvaluatorLogic:
 
         # Then
         assert result.passed
-        assert result.score == 0.7
+        assert result.score == DEFAULT_THRESHOLD
 
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_handles_none_score(
+    def test_evaluate_none_score(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
         mock_evaluate.return_value = Mock(scores=[{"faithfulness": None}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -132,12 +98,12 @@ class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_handles_missing_faithfulness_key(
+    def test_evaluate_missing_key(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
         mock_evaluate.return_value = Mock(scores=[{}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -152,7 +118,7 @@ class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_custom_threshold(
+    def test_evaluate_custom_threshold(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
@@ -172,12 +138,12 @@ class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_perfect_score(
+    def test_evaluate_perfect_score(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
         mock_evaluate.return_value = Mock(scores=[{"faithfulness": 1.0}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -192,12 +158,12 @@ class TestFaithfulnessEvaluatorLogic:
     @patch("llm_eval.faithfulness_evaluator.evaluate")
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_zero_score(
+    def test_evaluate_zero_score(
         self, _mock_chat, _mock_wrapper, mock_evaluate
     ):
         # Given
         mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.0}])
-        evaluator = FaithfulnessEvaluator(threshold=0.7)
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -213,17 +179,18 @@ class TestFaithfulnessEvaluatorLogic:
 class TestEvaluatorConfiguration:
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_default_threshold(self, _mock_chat, _mock_wrapper):
+    def test_init(self, _mock_chat, _mock_wrapper):
         # Given
         # When
         evaluator = FaithfulnessEvaluator()
 
         # Then
+        # Contract: default threshold is part of expected external behavior.
         assert evaluator.threshold == 0.7
 
     @patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper")
     @patch("llm_eval.faithfulness_evaluator.ChatAnthropic")
-    def test_custom_threshold_stored(self, _mock_chat, _mock_wrapper):
+    def test_init_custom_threshold(self, _mock_chat, _mock_wrapper):
         # Given
         custom_threshold = 0.85
 

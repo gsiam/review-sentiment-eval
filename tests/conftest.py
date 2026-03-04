@@ -15,7 +15,7 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 
 
 @pytest.fixture(scope="session")
-def test_dataset() -> list[dict[str, Any]]:
+def evaluation_dataset() -> list[dict[str, Any]]:
     """Load test dataset from JSON file."""
     dataset_path = DATA_DIR / "test_dataset.json"
     with open(dataset_path) as f:
@@ -24,15 +24,15 @@ def test_dataset() -> list[dict[str, Any]]:
 
 
 @pytest.fixture(scope="session")
-def normal_test_cases(test_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def normal_cases(evaluation_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Filter to only normal (non-adversarial) test cases."""
-    return [case for case in test_dataset if not case["is_adversarial"]]
+    return [case for case in evaluation_dataset if not case["is_adversarial"]]
 
 
 @pytest.fixture(scope="session")
-def adversarial_test_cases(test_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def adversarial_cases(evaluation_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Filter to only adversarial test cases."""
-    return [case for case in test_dataset if case["is_adversarial"]]
+    return [case for case in evaluation_dataset if case["is_adversarial"]]
 
 
 @pytest.fixture(scope="session")
@@ -44,7 +44,7 @@ def summarizer() -> Summarizer:
 @pytest.fixture(scope="session")
 def faithfulness_evaluator() -> FaithfulnessEvaluator:
     """Create a shared FaithfulnessEvaluator instance."""
-    return FaithfulnessEvaluator(threshold=0.7)
+    return FaithfulnessEvaluator(threshold=FaithfulnessEvaluator.DEFAULT_THRESHOLD)
 
 
 @pytest.fixture(scope="session")

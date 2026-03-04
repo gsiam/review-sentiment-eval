@@ -13,7 +13,7 @@ VALID_SUMMARY = "The customer expressed satisfaction with the product quality an
 
 class TestParseResponseDirectJson:
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_pure_json(self, _mock_chat):
+    def test_parse_response(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Great product.", "sentiment": "positive"}'
@@ -26,7 +26,7 @@ class TestParseResponseDirectJson:
         assert result["sentiment"] == "positive"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_pure_json_with_whitespace(self, _mock_chat):
+    def test_parse_response_whitespace_padded(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '  \n{"summary": "Great product.", "sentiment": "positive"}\n  '
@@ -39,7 +39,7 @@ class TestParseResponseDirectJson:
         assert result["sentiment"] == "positive"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_nested_braces_in_summary(self, _mock_chat):
+    def test_parse_response_nested_braces_in_summary(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Includes {braces} inside", "sentiment": "positive"}'
@@ -54,7 +54,7 @@ class TestParseResponseDirectJson:
 
 class TestParseResponseCodeFence:
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_json_code_fence(self, _mock_chat):
+    def test_parse_response_json_code_fence(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '```json\n{"summary": "Great product.", "sentiment": "positive"}\n```'
@@ -67,7 +67,7 @@ class TestParseResponseCodeFence:
         assert result["sentiment"] == "positive"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_plain_code_fence(self, _mock_chat):
+    def test_parse_response_plain_code_fence(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '```\n{"summary": "Product was defective and support was unhelpful.", "sentiment": "negative"}\n```'
@@ -80,7 +80,7 @@ class TestParseResponseCodeFence:
         assert result["sentiment"] == "negative"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_code_fence_with_preamble(self, _mock_chat):
+    def test_parse_response_code_fence_with_preamble(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = 'Here is the analysis:\n```json\n{"summary": "OK product.", "sentiment": "neutral"}\n```'
@@ -95,7 +95,7 @@ class TestParseResponseCodeFence:
 
 class TestParseResponseEmbeddedJson:
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_json_with_preamble(self, _mock_chat):
+    def test_parse_response_json_with_preamble(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = 'Sure, here is the result: {"summary": "Nice.", "sentiment": "positive"}'
@@ -108,7 +108,7 @@ class TestParseResponseEmbeddedJson:
         assert result["sentiment"] == "positive"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_json_with_trailing_text(self, _mock_chat):
+    def test_parse_response_json_with_trailing_text(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Nice.", "sentiment": "positive"}\nLet me know if you need more.'
@@ -123,7 +123,7 @@ class TestParseResponseEmbeddedJson:
 
 class TestParseResponseSentimentValidation:
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_uppercase_sentiment(self, _mock_chat):
+    def test_parse_response_uppercase_sentiment(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Review.", "sentiment": "POSITIVE"}'
@@ -135,7 +135,7 @@ class TestParseResponseSentimentValidation:
         assert result["sentiment"] == "positive"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_whitespace_padded_sentiment(self, _mock_chat):
+    def test_parse_response_whitespace_padded_sentiment(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"summary": "Review.", "sentiment": " positive "}'
@@ -148,7 +148,7 @@ class TestParseResponseSentimentValidation:
 
 
 class TestValidateParsedRaisesOnInvalidSentiment:
-    def test_missing_sentiment_raises(self):
+    def test_validate_parsed_missing_sentiment(self):
         # Then
         with pytest.raises(ValueError, match="Missing required field"):
             # When
@@ -160,7 +160,7 @@ class TestValidateParsedRaisesOnInvalidSentiment:
         "satisfied",
         "5",
     ])
-    def test_invalid_sentiment_raises(self, sentiment):
+    def test_validate_parsed_invalid_sentiment(self, sentiment):
         # Then
         with pytest.raises(ValueError, match="Invalid sentiment value"):
             # When
@@ -169,7 +169,7 @@ class TestValidateParsedRaisesOnInvalidSentiment:
 
 class TestParseResponseFallback:
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_plain_text_fallback(self, _mock_chat):
+    def test_parse_response_plain_text_fallback(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = "The customer was happy with the product overall."
@@ -182,7 +182,7 @@ class TestParseResponseFallback:
         assert result["sentiment"] == "neutral"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_invalid_json_fallback(self, _mock_chat):
+    def test_parse_response_invalid_json_fallback(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{summary: "missing quotes on key"}'
@@ -195,7 +195,7 @@ class TestParseResponseFallback:
         assert result["sentiment"] == "neutral"
 
     @patch("llm_eval.summarizer.ChatAnthropic")
-    def test_json_missing_summary_key_fallback(self, _mock_chat):
+    def test_parse_response_json_missing_summary_key_fallback(self, _mock_chat):
         # Given
         summarizer = Summarizer()
         raw = '{"sentiment": "positive"}'

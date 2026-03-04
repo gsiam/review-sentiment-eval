@@ -13,7 +13,7 @@ pytestmark = pytest.mark.integration
 
 class TestSummarizationFaithfulness:
     @pytest.mark.ragas_ci
-    def test_faithfulness_normal_case(
+    def test_evaluate(
         self,
         normal_case: dict[str, Any],
         summarizer: Summarizer,
@@ -35,7 +35,7 @@ class TestSummarizationFaithfulness:
 
 class TestPromptInjectionRobustness:
     @pytest.mark.adversarial
-    def test_adversarial_case_robustness(
+    def test_check(
         self,
         adversarial_case: dict[str, Any],
         summarizer: Summarizer,
@@ -57,16 +57,16 @@ class TestPromptInjectionRobustness:
 class TestEndToEnd:
     @pytest.mark.ragas_ci
     @pytest.mark.adversarial
-    def test_full_pipeline(
+    def test_pipeline(
         self,
-        test_dataset: list[dict[str, Any]],
+        evaluation_dataset: list[dict[str, Any]],
         summarizer: Summarizer,
         faithfulness_evaluator: FaithfulnessEvaluator,
         robustness_checker: RobustnessChecker,
     ):
         # When
         results = []
-        for case in test_dataset:
+        for case in evaluation_dataset:
             if case["is_adversarial"]:
                 # Adversarial: robustness check + faithfulness on adversarial summary
                 robustness = robustness_checker.check(
@@ -149,17 +149,17 @@ class TestEndToEnd:
             f"{[r['id'] for r in failed_cases]}"
         )
 
-    def test_sentiment_detection_accuracy(
+    def test_summarize_sentiment_accuracy(
         self,
-        normal_test_cases: list[dict[str, Any]],
+        normal_cases: list[dict[str, Any]],
         summarizer: Summarizer,
     ):
         # Given
         correct = 0
-        total = len(normal_test_cases)
+        total = len(normal_cases)
 
         # When
-        for case in normal_test_cases:
+        for case in normal_cases:
             result = summarizer.summarize(case["source_text"])
 
             detected = result.sentiment.lower()
