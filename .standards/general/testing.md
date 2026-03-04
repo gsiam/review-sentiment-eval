@@ -87,6 +87,28 @@ TestBasketButton:
 - **Keep test logic minimal** - complex logic belongs in the code being tested, not in tests
 - **Class ordering:** simpler methods first, then complex ones, then private helpers
 
+## Constants In Tests
+
+Use production constants to reduce repeated setup values,
+not to assert the same value back from the same source.
+
+```text
+# Good: de-duplicate setup
+evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+
+# Good: explicit contract assertion (catches default regressions)
+assert evaluator.threshold == 0.7
+
+# Avoid: tautological assertion
+assert evaluator.threshold == DEFAULT_THRESHOLD
+```
+
+Rule of thumb:
+
+- setup/arrange can use shared constants
+- important external contracts (defaults, public outputs)
+  should have at least one explicit literal assertion
+
 ## Test Categories
 
 Use markers/tags to classify tests by intended use:
