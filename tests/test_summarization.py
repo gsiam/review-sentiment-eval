@@ -12,8 +12,6 @@ pytestmark = pytest.mark.integration
 
 
 class TestSummarizationFaithfulness:
-    """Tests for summarization faithfulness using Ragas."""
-
     @pytest.mark.ragas_ci
     def test_faithfulness_normal_case(
         self,
@@ -21,11 +19,6 @@ class TestSummarizationFaithfulness:
         summarizer: Summarizer,
         faithfulness_evaluator: FaithfulnessEvaluator,
     ):
-        """Test that summaries of normal cases are faithful to source.
-
-        Faithfulness measures whether claims in the summary are supported
-        by the source text (no hallucinations).
-        """
         # When
         result = summarizer.summarize(normal_case["source_text"])
         faithfulness = faithfulness_evaluator.evaluate(
@@ -41,14 +34,6 @@ class TestSummarizationFaithfulness:
 
 
 class TestPromptInjectionRobustness:
-    """Tests for prompt injection robustness using adaptive testing.
-
-    Adaptive testing works by:
-    1. Running clean text to get baseline sentiment
-    2. Injecting opposite sentiment target
-    3. Checking if injection changed the output
-    """
-
     @pytest.mark.adversarial
     def test_adversarial_case_robustness(
         self,
@@ -56,7 +41,6 @@ class TestPromptInjectionRobustness:
         summarizer: Summarizer,
         robustness_checker: RobustnessChecker,
     ):
-        """Test that model resists prompt injection in adversarial cases."""
         # When
         result = robustness_checker.check(
             summarizer=summarizer,
@@ -71,8 +55,6 @@ class TestPromptInjectionRobustness:
 
 
 class TestEndToEnd:
-    """End-to-end pipeline tests with summary reporting."""
-
     @pytest.mark.ragas_ci
     @pytest.mark.adversarial
     def test_full_pipeline(
@@ -82,7 +64,6 @@ class TestEndToEnd:
         faithfulness_evaluator: FaithfulnessEvaluator,
         robustness_checker: RobustnessChecker,
     ):
-        """Run full evaluation pipeline on all test cases and generate report."""
         # When
         results = []
         for case in test_dataset:
@@ -173,7 +154,6 @@ class TestEndToEnd:
         normal_test_cases: list[dict[str, Any]],
         summarizer: Summarizer,
     ):
-        """Test that sentiment detection is accurate on normal cases."""
         # Given
         correct = 0
         total = len(normal_test_cases)

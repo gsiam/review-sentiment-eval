@@ -113,17 +113,6 @@ Do not include any other text before or after the JSON."""
 
     @staticmethod
     def _validate_parsed(parsed: dict) -> dict | None:
-        """Validate and normalize a parsed JSON dict.
-
-        Args:
-            parsed: The parsed JSON dictionary.
-
-        Returns:
-            Normalized dict with summary and sentiment, or None if invalid.
-
-        Raises:
-            ValueError: If sentiment is missing or not a valid value.
-        """
         if not isinstance(parsed, dict) or "summary" not in parsed:
             return None
 
@@ -140,14 +129,12 @@ Do not include any other text before or after the JSON."""
         }
 
     def _try_direct_json(self, text: str) -> dict | None:
-        """Try parsing the entire response as JSON."""
         try:
             return self._validate_parsed(json.loads(text.strip()))
         except (json.JSONDecodeError, ValueError):
             return None
 
     def _try_code_fence(self, text: str) -> dict | None:
-        """Try extracting JSON from a code fence."""
         match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
         if match:
             try:
@@ -157,7 +144,6 @@ Do not include any other text before or after the JSON."""
         return None
 
     def _try_balanced_braces(self, text: str) -> dict | None:
-        """Try extracting JSON by finding a balanced { ... } block."""
         start = text.find("{")
         if start == -1:
             return None

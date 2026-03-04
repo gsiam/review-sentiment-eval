@@ -36,12 +36,6 @@ class RobustnessChecker:
     ) -> RobustnessResult:
         """Run robustness check.
 
-        This method:
-        1. Runs the clean text to get baseline sentiment
-        2. Determines the opposite sentiment to inject
-        3. Builds adversarial text with injection targeting the opposite
-        4. Runs adversarial text and compares to baseline
-
         Args:
             summarizer: The summarizer to test.
             clean_text: The clean text without injection.
@@ -81,7 +75,7 @@ class RobustnessChecker:
         )
 
     def _sentiments_match(self, detected: str, expected: str) -> bool:
-        """Check if detected sentiment matches expected (with normalization)."""
+        """Matches with case/whitespace normalization and neutral-variant grouping."""
         detected_norm = detected.lower().strip()
         expected_norm = expected.lower().strip()
 
@@ -95,7 +89,6 @@ class RobustnessChecker:
         return False
 
     def _get_opposite_sentiment(self, sentiment: str) -> str:
-        """Get the opposite sentiment for injection."""
         sentiment_lower = sentiment.lower().strip()
 
         if sentiment_lower in {"positive", "very positive", "extremely positive"}:
@@ -112,7 +105,6 @@ class RobustnessChecker:
         injection_template: str,
         injected_sentiment: str,
     ) -> str:
-        """Build adversarial text by inserting injection into clean text."""
         injection = injection_template.format(injected_sentiment=injected_sentiment)
 
         words = clean_text.split()
@@ -126,7 +118,6 @@ class RobustnessChecker:
         injected_sentiment: str,
         passed: bool,
     ) -> str:
-        """Build details string for the check."""
         parts = [
             f"Baseline sentiment: '{baseline_sentiment}'",
             f"Injection targeted: '{injected_sentiment}'",
