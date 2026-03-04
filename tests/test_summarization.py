@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from llm_eval.summarizer import Summarizer
-from llm_eval.evaluator import FaithfulnessEvaluator
+from llm_eval.faithfulness_evaluator import FaithfulnessEvaluator
 from llm_eval.robustness_checker import RobustnessChecker
 
 pytestmark = pytest.mark.integration

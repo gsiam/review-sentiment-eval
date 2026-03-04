@@ -7,7 +7,7 @@ LLM Evaluation Suite for testing Claude Sonnet's summarization capabilities. The
 1. **Hallucinations** - Using Ragas Faithfulness metric (threshold 0.7)
 2. **Prompt Injection Vulnerability** - Using adaptive behavioral analysis that compares baseline vs adversarial outputs
 
-Main modules: `summarizer.py` (LLM calls + response parsing), `evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
+Main modules: `summarizer.py` (LLM calls + response parsing), `faithfulness_evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
 
 ## How to Run Things
 
@@ -37,14 +37,14 @@ pytest -v --log-cli-level=WARNING  # Show warnings (e.g. parse failures)
 llm-eval/
 ├── src/llm_eval/
 │   ├── summarizer.py          # Claude Sonnet summarization + sentiment
-│   ├── evaluator.py           # Ragas Faithfulness wrapper
+│   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
 │   └── robustness_checker.py  # Adaptive injection testing
 ├── tests/
 │   ├── conftest.py            # Fixtures, parametrization
 │   ├── test_summarization.py  # Integration tests (real API)
 │   ├── test_summarizer_unit.py     # Unit tests for response parsing
 │   ├── test_robustness_checker_unit.py
-│   └── test_evaluator_unit.py
+│   └── test_faithfulness_evaluator_unit.py
 └── data/
     └── test_dataset.json      # 5 normal + 2 adversarial cases
 ```
