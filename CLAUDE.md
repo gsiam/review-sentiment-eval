@@ -75,8 +75,10 @@ llm-eval/
 
 ## Standards
 
-Refer to `.standards/python/`, `.standards/ai-workflow.md`,
-and `.standards/documentation.md` for general conventions.
+Refer to `.standards/general/`, `.standards/python/`,
+`.standards/ai-workflow.md`, and `.standards/documentation.md` for general conventions.
+
+**Before writing or modifying code, read the relevant `.standards/` files first.** Apply them from the start — don't write code then check compliance after.
 
 ### Project-Specific
 
