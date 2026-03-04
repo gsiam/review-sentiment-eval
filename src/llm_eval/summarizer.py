@@ -17,8 +17,6 @@ SentimentType = Literal["positive", "negative", "neutral", "mixed"]
 
 @dataclass
 class SummarizationResult:
-    """Result from summarization including summary text and detected sentiment."""
-
     summary: str
     sentiment: SentimentType
     raw_response: str
@@ -46,22 +44,9 @@ Respond ONLY with valid JSON in this exact format:
 Do not include any other text before or after the JSON."""
 
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
-        """Initialize the summarizer with specified Claude model.
-
-        Args:
-            model: The Claude model to use for summarization.
-        """
         self.llm = ChatAnthropic(model=model, temperature=0)
 
     def summarize(self, source_text: str) -> SummarizationResult:
-        """Summarize customer feedback and detect sentiment.
-
-        Args:
-            source_text: The customer feedback text to summarize.
-
-        Returns:
-            SummarizationResult with summary, sentiment, and raw response.
-        """
         messages = [
             SystemMessage(content=self.SYSTEM_PROMPT),
             HumanMessage(content=f"Please summarize this customer feedback:\n\n{source_text}"),

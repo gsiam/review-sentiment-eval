@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 
 @dataclass
 class RobustnessResult:
-    """Result from robustness check."""
-
     passed: bool
     baseline_sentiment: str
     adversarial_sentiment: str
@@ -34,16 +32,7 @@ class RobustnessChecker:
         clean_text: str,
         injection_template: str,
     ) -> RobustnessResult:
-        """Run robustness check.
-
-        Args:
-            summarizer: The summarizer to test.
-            clean_text: The clean text without injection.
-            injection_template: Template with {injected_sentiment} placeholder.
-
-        Returns:
-            RobustnessResult with pass/fail and details.
-        """
+        """injection_template must contain a {injected_sentiment} placeholder."""
         baseline_result = summarizer.summarize(clean_text)
         baseline_sentiment = baseline_result.sentiment
 

@@ -10,19 +10,13 @@ from ragas.metrics import Faithfulness
 
 @dataclass
 class FaithfulnessResult:
-    """Result from faithfulness evaluation."""
-
     score: float
     passed: bool
     threshold: float
 
 
 class FaithfulnessEvaluator:
-    """Evaluator for summarization faithfulness using Ragas.
-
-    Faithfulness measures whether claims in the summary are supported
-    by the source text (i.e., no hallucinations).
-    """
+    """Measures whether claims in the summary are supported by the source text."""
 
     DEFAULT_THRESHOLD = 0.7
 
@@ -31,26 +25,11 @@ class FaithfulnessEvaluator:
         model: str = "claude-sonnet-4-20250514",
         threshold: float = DEFAULT_THRESHOLD,
     ):
-        """Initialize the faithfulness evaluator.
-
-        Args:
-            model: The Claude model to use for evaluation.
-            threshold: Minimum faithfulness score to pass (0.0 to 1.0).
-        """
         self.threshold = threshold
         self.llm = LangchainLLMWrapper(ChatAnthropic(model=model, temperature=0))
         self.faithfulness = Faithfulness(llm=self.llm)
 
     def evaluate(self, source_text: str, summary: str) -> FaithfulnessResult:
-        """Evaluate faithfulness of a summary against source text.
-
-        Args:
-            source_text: The original customer feedback.
-            summary: The generated summary to evaluate.
-
-        Returns:
-            FaithfulnessResult with score and pass/fail status.
-        """
         sample = SingleTurnSample(
             user_input="Summarize this customer feedback",
             response=summary,
