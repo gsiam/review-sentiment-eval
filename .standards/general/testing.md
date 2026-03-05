@@ -15,7 +15,8 @@ Use **Given-When-Then** comments to separate setup, action, and assertion:
 <assertion>
 ```
 
-Skip "Given" if there's no meaningful setup beyond fixtures.
+Skip `# Given` when there is no setup beyond what fixtures provide
+(don't stack `# Given` directly above `# When` with nothing between them).
 
 Add a docstring when the test's intent isn't obvious from its name alone.
 
@@ -86,6 +87,8 @@ TestBasketButton:
 
 - **Keep test logic minimal** - complex logic belongs in the code being tested, not in tests
 - **Class ordering:** simpler methods first, then complex ones, then private helpers
+- **Test ordering within a class:** happy path and core behavior first,
+  boundary cases next, then defensive/edge cases last
 
 ## Constants In Tests
 
