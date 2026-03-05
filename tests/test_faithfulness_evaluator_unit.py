@@ -80,57 +80,6 @@ class TestFaithfulnessEvaluatorLogic:
         assert result.passed
         assert result.score == DEFAULT_THRESHOLD
 
-    def test_evaluate_none_score(
-        self, mock_evaluate
-    ):
-        # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": None}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
-
-        # When
-        result = evaluator.evaluate(
-            source_text="Original text",
-            summary="Summary",
-        )
-
-        # Then
-        assert not result.passed
-        assert result.score == 0.0
-
-    def test_evaluate_missing_key(
-        self, mock_evaluate
-    ):
-        # Given
-        mock_evaluate.return_value = Mock(scores=[{}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
-
-        # When
-        result = evaluator.evaluate(
-            source_text="Original text",
-            summary="Summary",
-        )
-
-        # Then
-        assert not result.passed
-        assert result.score == 0.0
-
-    def test_evaluate_custom_threshold(
-        self, mock_evaluate
-    ):
-        # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.85}])
-        evaluator = FaithfulnessEvaluator(threshold=0.9)
-
-        # When
-        result = evaluator.evaluate(
-            source_text="Original text",
-            summary="Summary",
-        )
-
-        # Then
-        assert not result.passed
-        assert result.threshold == 0.9
-
     def test_evaluate_perfect_score(
         self, mock_evaluate
     ):
@@ -165,10 +114,43 @@ class TestFaithfulnessEvaluatorLogic:
         assert not result.passed
         assert result.score == 0.0
 
+    def test_evaluate_none_score(
+        self, mock_evaluate
+    ):
+        # Given
+        mock_evaluate.return_value = Mock(scores=[{"faithfulness": None}])
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+
+        # When
+        result = evaluator.evaluate(
+            source_text="Original text",
+            summary="Summary",
+        )
+
+        # Then
+        assert not result.passed
+        assert result.score == 0.0
+
+    def test_evaluate_missing_key(
+        self, mock_evaluate
+    ):
+        # Given
+        mock_evaluate.return_value = Mock(scores=[{}])
+        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+
+        # When
+        result = evaluator.evaluate(
+            source_text="Original text",
+            summary="Summary",
+        )
+
+        # Then
+        assert not result.passed
+        assert result.score == 0.0
+
 
 class TestEvaluatorConfiguration:
     def test_init(self):
-        # Given
         # When
         evaluator = FaithfulnessEvaluator()
 
@@ -184,4 +166,4 @@ class TestEvaluatorConfiguration:
         evaluator = FaithfulnessEvaluator(threshold=custom_threshold)
 
         # Then
-        assert evaluator.threshold == 0.85
+        assert evaluator.threshold == custom_threshold
