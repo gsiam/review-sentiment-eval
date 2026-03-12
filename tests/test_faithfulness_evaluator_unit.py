@@ -13,10 +13,11 @@ DEFAULT_THRESHOLD = FaithfulnessEvaluator.DEFAULT_THRESHOLD
 
 @pytest.fixture(autouse=True)
 def _mock_llm_deps():
-    """Prevent real LLM client construction in all tests."""
+    """Prevent real LLM client construction and metric validation in all tests."""
     with (
-        patch("llm_eval.faithfulness_evaluator.ChatAnthropic"),
-        patch("llm_eval.faithfulness_evaluator.LangchainLLMWrapper"),
+        patch("llm_eval.faithfulness_evaluator.Anthropic"),
+        patch("llm_eval.faithfulness_evaluator.llm_factory"),
+        patch("llm_eval.faithfulness_evaluator.Faithfulness"),
     ):
         yield
 

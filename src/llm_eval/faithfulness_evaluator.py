@@ -2,10 +2,10 @@
 
 from dataclasses import dataclass
 
-from langchain_anthropic import ChatAnthropic
+from anthropic import Anthropic
 from ragas import EvaluationDataset, SingleTurnSample, evaluate
-from ragas.llms import LangchainLLMWrapper
-from ragas.metrics import Faithfulness
+from ragas.llms import llm_factory
+from ragas.metrics.collections import Faithfulness
 
 
 @dataclass
@@ -26,7 +26,12 @@ class FaithfulnessEvaluator:
         threshold: float = DEFAULT_THRESHOLD,
     ):
         self.threshold = threshold
-        self.llm = LangchainLLMWrapper(ChatAnthropic(model=model, temperature=0))
+        self.llm = llm_factory(
+            model=model,
+            provider="anthropic",
+            client=Anthropic(),
+            temperature=0,
+        )
         self.faithfulness = Faithfulness(llm=self.llm)
 
     def evaluate(self, source_text: str, summary: str) -> FaithfulnessResult:
