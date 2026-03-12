@@ -7,6 +7,8 @@ from ragas import EvaluationDataset, SingleTurnSample, evaluate
 from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness
 
+from llm_eval.constants import DEFAULT_MODEL
+
 
 @dataclass
 class FaithfulnessResult:
@@ -22,7 +24,7 @@ class FaithfulnessEvaluator:
 
     def __init__(
         self,
-        model: str = "claude-sonnet-4-20250514",
+        model: str = DEFAULT_MODEL,
         threshold: float = DEFAULT_THRESHOLD,
     ):
         self.threshold = threshold

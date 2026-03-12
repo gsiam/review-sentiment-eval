@@ -1,4 +1,4 @@
-"""Summarizer module using LangChain and Claude Sonnet."""
+"""Summarizer module using LangChain."""
 
 import json
 import logging
@@ -8,6 +8,8 @@ from typing import Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from llm_eval.constants import DEFAULT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ class SummarizationResult:
 
 
 class Summarizer:
-    """Customer survey summarizer using Claude Sonnet via LangChain."""
+    """Customer survey summarizer using LangChain."""
 
     SYSTEM_PROMPT = """You are a customer feedback summarizer. Your task is to:
 1. Summarize the customer's feedback in 2-3 concise sentences
@@ -43,7 +45,7 @@ Respond ONLY with valid JSON in this exact format:
 
 Do not include any other text before or after the JSON."""
 
-    def __init__(self, model: str = "claude-sonnet-4-20250514"):
+    def __init__(self, model: str = DEFAULT_MODEL):
         self.llm = ChatAnthropic(model=model, temperature=0)
 
     def summarize(self, source_text: str) -> SummarizationResult:
