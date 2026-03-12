@@ -73,6 +73,8 @@ llm-eval/
 
    Logs a warning on fallback to make parse failures visible.
 
+5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with a raw `Anthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The two libraries each demand their own LLM type.
+
 ## Standards
 
 Refer to `.standards/general/`, `.standards/python/`,
@@ -87,6 +89,7 @@ Refer to `.standards/general/`, `.standards/python/`,
 
 ### Dependencies
 
-- `langchain-anthropic` for Claude API
-- `ragas` for Faithfulness metric
+- `anthropic` for raw Anthropic client (used by Ragas `llm_factory`)
+- `langchain-anthropic` for Claude API (used by Summarizer)
+- `ragas` for Faithfulness metric (v0.4+ collections API)
 - `pytest` for testing
