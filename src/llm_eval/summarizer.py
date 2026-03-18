@@ -1,15 +1,20 @@
 """Summarizer module using LangChain."""
 
+from __future__ import annotations
+
 import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from llm_eval.constants import DEFAULT_MODEL
+
+if TYPE_CHECKING:
+    from langchain_core.language_models import BaseChatModel
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +50,8 @@ Respond ONLY with valid JSON in this exact format:
 
 Do not include any other text before or after the JSON."""
 
-    def __init__(self, model: str = DEFAULT_MODEL):
-        self.llm = ChatAnthropic(model=model, temperature=0)
+    def __init__(self, model: str = DEFAULT_MODEL, *, llm: BaseChatModel | None = None):
+        self.llm = llm or ChatAnthropic(model=model, temperature=0)
 
     def summarize(self, source_text: str) -> SummarizationResult:
         messages = [

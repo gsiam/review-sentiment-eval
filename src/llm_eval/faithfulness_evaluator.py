@@ -1,6 +1,9 @@
 """Faithfulness evaluator using Ragas metrics."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from anthropic import Anthropic
 from ragas import EvaluationDataset, SingleTurnSample, evaluate
@@ -8,6 +11,9 @@ from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness
 
 from llm_eval.constants import DEFAULT_MODEL
+
+if TYPE_CHECKING:
+    from ragas.llms import InstructorBaseRagasLLM
 
 
 @dataclass
@@ -26,9 +32,11 @@ class FaithfulnessEvaluator:
         self,
         model: str = DEFAULT_MODEL,
         threshold: float = DEFAULT_THRESHOLD,
+        *,
+        llm: InstructorBaseRagasLLM | None = None,
     ):
         self.threshold = threshold
-        self.llm = llm_factory(
+        self.llm = llm or llm_factory(
             model=model,
             provider="anthropic",
             client=Anthropic(),
