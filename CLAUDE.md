@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LLM Evaluation Suite for testing Claude Sonnet's summarization capabilities. The project evaluates:
+LLM Evaluation Suite for testing summarization capabilities. Defaults to Claude Sonnet but supports injecting alternative LLMs. The project evaluates:
 
 1. **Hallucinations** - Using Ragas Faithfulness metric (threshold 0.7)
 2. **Prompt Injection Vulnerability** - Using adaptive behavioral analysis that compares baseline vs adversarial outputs
@@ -73,7 +73,9 @@ llm-eval/
 
    Logs a warning on fallback to make parse failures visible.
 
-5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with a raw `Anthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The two libraries each demand their own LLM type.
+5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with a raw `Anthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The two libraries each demand their own LLM type. Both classes default to constructing their own LLM but accept a pre-built instance via `llm=` for testing and model swapping.
+
+6. **LLM Dependency Injection**: Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `llm` parameter, falling back to the default if not provided. `Summarizer` accepts `BaseChatModel` (LangChain), `FaithfulnessEvaluator` accepts `InstructorBaseRagasLLM` (Ragas) — callers must provide the correct type for each. Types are imported under `TYPE_CHECKING` to avoid heavy runtime imports.
 
 ## Standards
 
