@@ -38,13 +38,15 @@ llm-eval/
 ├── src/llm_eval/
 │   ├── summarizer.py          # Claude Sonnet summarization + sentiment
 │   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
-│   └── robustness_checker.py  # Adaptive injection testing
+│   ├── robustness_checker.py  # Adaptive injection testing
+│   └── logging_callback.py   # LLM request/response logging
 ├── tests/
 │   ├── conftest.py            # Fixtures, parametrization
 │   ├── test_summarization.py  # Integration tests (real API)
 │   ├── test_summarizer_unit.py     # Unit tests for response parsing
 │   ├── test_robustness_checker_unit.py
-│   └── test_faithfulness_evaluator_unit.py
+│   ├── test_faithfulness_evaluator_unit.py
+│   └── test_logging_callback_unit.py
 └── data/
     └── test_dataset.json      # 5 normal + 2 adversarial cases
 ```
@@ -76,6 +78,8 @@ llm-eval/
 5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with a raw `Anthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The two libraries each demand their own LLM type. Both classes default to constructing their own LLM but accept a pre-built instance via `llm=` for testing and model swapping.
 
 6. **LLM Dependency Injection**: Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `llm` parameter, falling back to the default if not provided. `Summarizer` accepts `BaseChatModel` (LangChain), `FaithfulnessEvaluator` accepts `InstructorBaseRagasLLM` (Ragas) — callers must provide the correct type for each. Types are imported under `TYPE_CHECKING` to avoid heavy runtime imports.
+
+7. **LLM Logging**: Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls. `setup_ragas_logging` registers instructor hooks (`completion:kwargs` / `completion:response`) on the Ragas `InstructorLLM.client`. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
 
 ## Standards
 
