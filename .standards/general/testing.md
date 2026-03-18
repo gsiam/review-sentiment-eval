@@ -83,6 +83,21 @@ TestBasketButton:
     test_click_should_turn_into_quantity_field_when_activated
 ```
 
+## Test Assertions
+
+Prefer asserting the **full expected output** over multiple substring checks.
+This catches formatting bugs that individual checks would miss.
+
+```text
+# Good: single assertion on the full output
+assert "llm.request | model=ChatAnthropic | messages: [human: Hello]" in caplog.text
+
+# Avoid: multiple substring assertions on the same output
+assert "ChatAnthropic" in caplog.text
+assert "human" in caplog.text
+assert "Hello" in caplog.text
+```
+
 ## Test Organization
 
 - **Keep test logic minimal** - complex logic belongs in the code being tested, not in tests
