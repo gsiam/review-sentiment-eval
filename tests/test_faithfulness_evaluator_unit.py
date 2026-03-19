@@ -15,7 +15,7 @@ DEFAULT_THRESHOLD = FaithfulnessEvaluator.DEFAULT_THRESHOLD
 def _mock_llm_deps():
     """Prevent real LLM client construction and metric validation in all tests."""
     with (
-        patch("llm_eval.faithfulness_evaluator.Anthropic"),
+        patch("llm_eval.faithfulness_evaluator.AsyncAnthropic"),
         patch("llm_eval.faithfulness_evaluator.llm_factory"),
         patch("llm_eval.faithfulness_evaluator.Faithfulness"),
     ):
@@ -23,19 +23,15 @@ def _mock_llm_deps():
 
 
 @pytest.fixture()
-def mock_evaluate():
-    with patch("llm_eval.faithfulness_evaluator.evaluate") as mock_eval:
-        yield mock_eval
+def evaluator():
+    return FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
 
 
 class TestFaithfulnessEvaluatorLogic:
-    def test_evaluate(self, mock_evaluate):
+    def test_evaluate(self, evaluator):
         # Given
         passing_score = 0.9
-        mock_evaluate.return_value = Mock(
-            scores=[{"faithfulness": passing_score}]
-        )
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=passing_score)
 
         # When
         result = evaluator.evaluate(
@@ -47,12 +43,9 @@ class TestFaithfulnessEvaluatorLogic:
         assert result.passed
         assert result.score == passing_score
 
-    def test_evaluate_below_threshold(
-        self, mock_evaluate
-    ):
+    def test_evaluate_below_threshold(self, evaluator):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.5}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=0.5)
 
         # When
         result = evaluator.evaluate(
@@ -64,12 +57,9 @@ class TestFaithfulnessEvaluatorLogic:
         assert not result.passed
         assert result.score == 0.5
 
-    def test_evaluate_at_threshold(
-        self, mock_evaluate
-    ):
+    def test_evaluate_at_threshold(self, evaluator):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": DEFAULT_THRESHOLD}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=DEFAULT_THRESHOLD)
 
         # When
         result = evaluator.evaluate(
@@ -81,12 +71,9 @@ class TestFaithfulnessEvaluatorLogic:
         assert result.passed
         assert result.score == DEFAULT_THRESHOLD
 
-    def test_evaluate_perfect_score(
-        self, mock_evaluate
-    ):
+    def test_evaluate_perfect_score(self, evaluator):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 1.0}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=1.0)
 
         # When
         result = evaluator.evaluate(
@@ -98,12 +85,9 @@ class TestFaithfulnessEvaluatorLogic:
         assert result.passed
         assert result.score == 1.0
 
-    def test_evaluate_zero_score(
-        self, mock_evaluate
-    ):
+    def test_evaluate_zero_score(self, evaluator):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": 0.0}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=0.0)
 
         # When
         result = evaluator.evaluate(
@@ -115,29 +99,9 @@ class TestFaithfulnessEvaluatorLogic:
         assert not result.passed
         assert result.score == 0.0
 
-    def test_evaluate_none_score(
-        self, mock_evaluate
-    ):
+    def test_evaluate_none_score(self, evaluator):
         # Given
-        mock_evaluate.return_value = Mock(scores=[{"faithfulness": None}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
-
-        # When
-        result = evaluator.evaluate(
-            source_text="Original text",
-            summary="Summary",
-        )
-
-        # Then
-        assert not result.passed
-        assert result.score == 0.0
-
-    def test_evaluate_missing_key(
-        self, mock_evaluate
-    ):
-        # Given
-        mock_evaluate.return_value = Mock(scores=[{}])
-        evaluator = FaithfulnessEvaluator(threshold=DEFAULT_THRESHOLD)
+        evaluator.faithfulness.score.return_value = Mock(value=None)
 
         # When
         result = evaluator.evaluate(

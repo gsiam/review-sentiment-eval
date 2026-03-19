@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from anthropic import Anthropic
-from ragas import EvaluationDataset, SingleTurnSample, evaluate
+from anthropic import AsyncAnthropic
 from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness
 
@@ -39,29 +38,18 @@ class FaithfulnessEvaluator:
         self.llm = llm or llm_factory(
             model=model,
             provider="anthropic",
-            client=Anthropic(),
+            client=AsyncAnthropic(),
             temperature=0,
         )
         self.faithfulness = Faithfulness(llm=self.llm)
 
     def evaluate(self, source_text: str, summary: str) -> FaithfulnessResult:
-        sample = SingleTurnSample(
+        result = self.faithfulness.score(
             user_input="Summarize this customer feedback",
             response=summary,
             retrieved_contexts=[source_text],
         )
-
-        dataset = EvaluationDataset(samples=[sample])
-
-        results = evaluate(
-            dataset=dataset,
-            metrics=[self.faithfulness],
-        )
-
-        score = results.scores[0].get("faithfulness", 0.0)
-        if score is None:
-            score = 0.0
-
+        score = float(result.value) if result.value is not None else 0.0
         return FaithfulnessResult(
             score=score,
             passed=score >= self.threshold,
