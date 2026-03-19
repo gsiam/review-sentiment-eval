@@ -14,7 +14,7 @@
 ## Documentation
 
 - **Google-style docstrings** with `Args:` and `Returns:` sections for public APIs
-- One-line docstrings for simple helper methods
+- Private helpers: add a docstring only when the name and type signature don't fully describe the behavior (e.g., non-obvious side effects, routing logic, edge cases). Skip it when the docstring would just restate the name.
 
 ## Logging
 
