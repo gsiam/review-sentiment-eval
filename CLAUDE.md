@@ -28,7 +28,10 @@ ruff check src/ tests/
 # Tests
 pytest -m unit              # Unit tests only (fast, no API)
 pytest -m integration       # Integration tests (real API)
-pytest -v --log-cli-level=WARNING  # Show warnings (e.g. parse failures)
+
+# Model selection (integration tests)
+pytest -m integration --summarizer-model ollama/llama3.2 --judge-model ollama/mistral
+pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-20250514
 ```
 
 ## Architecture Notes
@@ -41,7 +44,7 @@ llm-eval/
 │   ├── robustness_checker.py  # Adaptive injection testing
 │   └── logging_callback.py   # LLM request/response logging
 ├── tests/
-│   ├── conftest.py            # Fixtures, parametrization
+│   ├── conftest.py            # Fixtures, parametrization, model selection CLI
 │   ├── test_summarization.py  # Integration tests (real API)
 │   ├── test_summarizer_unit.py     # Unit tests for response parsing
 │   ├── test_robustness_checker_unit.py
@@ -75,7 +78,7 @@ llm-eval/
 
    Logs a warning on fallback to make parse failures visible.
 
-5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with a raw `Anthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The two libraries each demand their own LLM type. Both classes default to constructing their own LLM but accept a pre-built instance via `llm=` for testing and model swapping.
+5. **Ragas LLM Integration**: `Summarizer` uses `ChatAnthropic` (LangChain) for prompt/chain features. `FaithfulnessEvaluator` uses `ragas.llms.llm_factory` with an `AsyncAnthropic()` client because Ragas v0.4's `Faithfulness` metric (from `ragas.metrics.collections`) requires `InstructorBaseRagasLLM`, which only `llm_factory` returns. The evaluator calls `faithfulness.score()` directly (not `ragas.evaluate()`) because the collections `Faithfulness` inherits from `BaseMetric`, not `ragas.metrics.base.Metric`, and `evaluate()` rejects it with an isinstance check. `score()` runs `asyncio.run(ascore())` internally, which requires the async client. Both classes default to constructing their own LLM but accept a pre-built instance via `llm=` for testing and model swapping.
 
 6. **LLM Dependency Injection**: Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `llm` parameter, falling back to the default if not provided. `Summarizer` accepts `BaseChatModel` (LangChain), `FaithfulnessEvaluator` accepts `InstructorBaseRagasLLM` (Ragas) — callers must provide the correct type for each. Types are imported under `TYPE_CHECKING` to avoid heavy runtime imports.
 
@@ -95,7 +98,7 @@ Refer to `.standards/general/`, `.standards/python/`,
 
 ### Dependencies
 
-- `anthropic` for raw Anthropic client (used by Ragas `llm_factory`)
+- `anthropic` for async Anthropic client (used by Ragas `llm_factory` — must be `AsyncAnthropic`, not sync)
 - `langchain-anthropic` for Claude API (used by Summarizer)
 - `ragas` for Faithfulness metric (v0.4+ collections API)
 - `pytest` for testing

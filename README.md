@@ -1,6 +1,6 @@
 # LLM Evaluation Suite
 
-A testing framework for evaluating Claude Sonnet's summarization capabilities, focusing on **hallucination detection** and **prompt injection robustness**.
+A testing framework for evaluating LLM summarization capabilities, focusing on **hallucination detection** and **prompt injection robustness**. Defaults to Claude Sonnet but supports any model via CLI options (including local models through Ollama).
 
 ## What It Tests
 
@@ -89,17 +89,19 @@ The adaptive approach avoids this by using the model's own baseline as the refer
 ```text
 llm-eval/
 ├── src/llm_eval/
-│   ├── summarizer.py          # Claude Sonnet summarization + sentiment
-│   ├── evaluator.py           # Ragas Faithfulness wrapper
-│   └── robustness_checker.py  # Adaptive injection testing
+│   ├── summarizer.py              # LLM summarization + sentiment
+│   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
+│   ├── robustness_checker.py      # Adaptive injection testing
+│   └── logging_callback.py        # LLM request/response logging
 ├── tests/
-│   ├── conftest.py            # Fixtures, parametrization
-│   ├── test_summarization.py  # Integration tests (real API)
-│   ├── test_summarizer_unit.py        # Unit tests for response parsing
+│   ├── conftest.py                # Fixtures, parametrization, model selection CLI
+│   ├── test_summarization.py      # Integration tests (real API)
+│   ├── test_summarizer_unit.py
+│   ├── test_faithfulness_evaluator_unit.py
 │   ├── test_robustness_checker_unit.py
-│   └── test_evaluator_unit.py
+│   └── test_logging_callback_unit.py
 └── data/
-    └── test_dataset.json      # 5 normal + 2 adversarial cases
+    └── test_dataset.json          # 5 normal + 2 adversarial cases
 ```
 
 ## Setup
@@ -128,10 +130,18 @@ pytest -m integration
 
 # All tests
 pytest -v
+
+# With LLM request/response logs
+pytest -m integration --log-cli-level=INFO
+
+# Model selection (integration tests)
+pytest -m integration --summarizer-model ollama/llama3.2 --judge-model ollama/mistral
+pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-20250514
 ```
 
 ## Dependencies
 
-- `langchain-anthropic` - Claude API integration
+- `anthropic` - Async Anthropic client (used by Ragas judge)
+- `langchain-anthropic` - Claude API integration (used by Summarizer)
 - `ragas` - Faithfulness metric for hallucination detection
 - `pytest` - Testing framework
