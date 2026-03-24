@@ -30,7 +30,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=src/llm_eval --cov-branch"
+addopts = ""
 markers = [
     "unit: marks unit tests (no API calls, fast)",
     "integration: marks integration tests (real API calls, slow)",
@@ -39,6 +39,7 @@ markers = [
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+log_cli_format = "%(message)s"
 
 [tool.coverage.run]
 source = ["src/llm_eval"]
