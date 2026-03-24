@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,6 +15,10 @@ from llm_eval.faithfulness_evaluator import FaithfulnessEvaluator
 from llm_eval.logging_callback import LLMLoggingCallback, setup_ragas_logging
 from llm_eval.robustness_checker import RobustnessChecker
 from llm_eval.summarizer import Summarizer
+
+# Suppress noisy HTTP client logs when using --log-cli-level=INFO
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -58,10 +63,10 @@ def _make_judge_llm(model_spec: str) -> InstructorBaseRagasLLM:
 
     if model_spec.startswith("ollama/"):
         model_name = model_spec.removeprefix("ollama/")
-        from openai import OpenAI
+        from openai import AsyncOpenAI
 
         base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        client = OpenAI(base_url=base_url, api_key="ollama")
+        client = AsyncOpenAI(base_url=base_url, api_key="ollama")
         llm = llm_factory(
             model=model_name,
             provider="openai",
@@ -81,26 +86,6 @@ def _make_judge_llm(model_spec: str) -> InstructorBaseRagasLLM:
     setup_ragas_logging(llm)
     return llm
 
-
-@pytest.fixture(scope="session")
-def evaluation_dataset() -> list[dict[str, Any]]:
-    """Load test dataset from JSON file."""
-    dataset_path = DATA_DIR / "test_dataset.json"
-    with open(dataset_path) as f:
-        data = json.load(f)
-    return data["test_cases"]
-
-
-@pytest.fixture(scope="session")
-def normal_cases(evaluation_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Filter to only normal (non-adversarial) test cases."""
-    return [case for case in evaluation_dataset if not case["is_adversarial"]]
-
-
-@pytest.fixture(scope="session")
-def adversarial_cases(evaluation_dataset: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Filter to only adversarial test cases."""
-    return [case for case in evaluation_dataset if case["is_adversarial"]]
 
 
 @pytest.fixture(scope="session")
@@ -129,17 +114,6 @@ def robustness_checker() -> RobustnessChecker:
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Dynamically parametrize tests based on test dataset."""
-    if "test_case" in metafunc.fixturenames:
-        dataset_path = DATA_DIR / "test_dataset.json"
-        with open(dataset_path) as f:
-            data = json.load(f)
-        test_cases = data["test_cases"]
-        metafunc.parametrize(
-            "test_case",
-            test_cases,
-            ids=[case["id"] for case in test_cases],
-        )
-
     if "normal_case" in metafunc.fixturenames:
         dataset_path = DATA_DIR / "test_dataset.json"
         with open(dataset_path) as f:
