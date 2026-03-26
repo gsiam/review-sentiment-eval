@@ -9,6 +9,8 @@ LLM Evaluation Suite for testing summarization capabilities. Defaults to Claude 
 
 Main modules: `summarizer.py` (LLM calls + response parsing), `faithfulness_evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
 
+Active plan: `~/.claude/plans/llm-eval-model-agnostic.md`
+
 ## How to Run Things
 
 ```bash
@@ -32,6 +34,12 @@ pytest -m integration       # Integration tests (real API)
 # Model selection (integration tests)
 pytest -m integration --summarizer-model ollama/llama3.2 --judge-model ollama/mistral
 pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-20250514
+
+# Coverage
+pytest -m unit --cov=src/llm_eval --cov-branch
+
+# Structured log output (integration tests)
+pytest -m integration --log-cli-level=INFO
 ```
 
 ## Architecture Notes
@@ -82,7 +90,7 @@ llm-eval/
 
 6. **LLM Dependency Injection**: Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `llm` parameter, falling back to the default if not provided. `Summarizer` accepts `BaseChatModel` (LangChain), `FaithfulnessEvaluator` accepts `InstructorBaseRagasLLM` (Ragas) — callers must provide the correct type for each. Types are imported under `TYPE_CHECKING` to avoid heavy runtime imports.
 
-7. **LLM Logging**: Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls. `setup_ragas_logging` registers instructor hooks (`completion:kwargs` / `completion:response`) on the Ragas `InstructorLLM.client`. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
+7. **LLM Logging**: Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls — logs model name at INFO, full messages at DEBUG. `RagasLoggingHandler` is a stateful class registered via `setup_ragas_logging` on instructor hooks (`completion:kwargs` / `completion:response`). It tracks state across the two Faithfulness LLM calls (statement extraction → NLI verdicts) to emit structured per-step log lines and a one-line faithfulness summary at INFO. Raw responses go to DEBUG. Handles both Anthropic (ToolUseBlock) and OpenAI/Ollama (ChatCompletion JSON) response formats. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
 
 ## Standards
 
@@ -102,3 +110,4 @@ Refer to `.standards/general/`, `.standards/python/`,
 - `langchain-anthropic` for Claude API (used by Summarizer)
 - `ragas` for Faithfulness metric (v0.4+ collections API)
 - `pytest` for testing
+- `langchain-ollama` for local Ollama models (optional, install with `pip install langchain-ollama`)
