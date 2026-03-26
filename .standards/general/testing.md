@@ -105,6 +105,16 @@ assert "Hello" in caplog.text
 - **Test ordering within a class:** happy path and core behavior first,
   boundary cases next, then defensive/edge cases last
 
+## Test Independence
+
+Tests must be fully self-contained — no shared mutable state, no execution
+order dependencies. Accept duplicate setup (even duplicate API calls in
+integration tests) rather than coupling tests through shared fixtures or
+results from earlier tests.
+
+Each test should check one concern. If a test needs four fixtures to verify
+two independent failure modes, split it into two tests.
+
 ## Constants In Tests
 
 Use production constants to reduce repeated setup values,

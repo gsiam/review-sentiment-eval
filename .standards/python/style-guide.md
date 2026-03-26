@@ -16,6 +16,24 @@
 - **Google-style docstrings** with `Args:` and `Returns:` sections for public APIs
 - Private helpers: add a docstring only when the name and type signature don't fully describe the behavior (e.g., non-obvious side effects, routing logic, edge cases). Skip it when the docstring would just restate the name.
 
+## Comparisons
+
+Prefer explicit comparisons over truthy checks when values have specific
+meaning:
+
+```python
+# Good: explicit — None and 0 are different
+sum(1 for s in items if s.get("verdict") == 1)
+
+# Avoid: truthy — None (missing) counted same as 0 (unfaithful)
+sum(1 for s in items if s.get("verdict"))
+```
+
 ## Logging
 
 Use `logging.getLogger(__name__)` - not print statements.
+
+Use **INFO** for actionable, summary-level data (model names, scores,
+pass/fail). Use **DEBUG** for raw/verbose data (full message content,
+response objects). A reader at INFO should see a useful pipeline trace
+without noise.
