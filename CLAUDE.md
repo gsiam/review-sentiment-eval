@@ -110,4 +110,4 @@ Refer to `.standards/general/`, `.standards/python/`,
 - `langchain-anthropic` for Claude API (used by Summarizer)
 - `ragas` for Faithfulness metric (v0.4+ collections API)
 - `pytest` for testing
-- `langchain-ollama` for local Ollama models (optional, install with `pip install langchain-ollama`)
+- `langchain-ollama` for local Ollama models (optional, install with `pip install -e ".[local]"`)
