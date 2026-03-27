@@ -114,6 +114,9 @@ source .venv/bin/activate
 # Install dependencies
 pip install -e .
 
+# For local model support (Ollama)
+pip install -e ".[local]"
+
 # Configure API key
 cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
