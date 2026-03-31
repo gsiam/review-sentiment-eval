@@ -1,0 +1,14 @@
+# Virtual environment — hundreds of MB of third-party packages
+.venv/
+
+# Generated/build artifacts
+src/llm_eval.egg-info/
+reports/
+
+# Coverage and test cache
+.coverage
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
