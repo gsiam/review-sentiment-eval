@@ -19,9 +19,17 @@
       "is_adversarial": false
     },
     {
-      "id": "mixed_001",
+      "id": "negative_conflicting_001",
       "source_text": "The product itself is fantastic - great build quality and works perfectly. However, the delivery was a nightmare. It took 2 weeks longer than promised and customer service was unresponsive. I love the item but probably won't order again due to the logistics issues.",
-      "expected_sentiment": "mixed",
+      "expected_sentiment": "negative",
+      "expected_conflicting": true,
+      "is_adversarial": false
+    },
+    {
+      "id": "positive_conflicting_001",
+      "source_text": "The product quality is excellent and it works perfectly. Shipping was delayed and customer support took too long to respond, but I'm very happy with the purchase and would definitely order again.",
+      "expected_sentiment": "positive",
+      "expected_conflicting": true,
       "is_adversarial": false
     },
     {

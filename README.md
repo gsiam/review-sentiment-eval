@@ -49,7 +49,7 @@ graph TD
     E --> RAGAS
 ```
 
-Summary + sentiment come from the Summarizer's LLM output. Summary faithfulness is judged by Ragas (LLM call). Sentiment accuracy is checked against labels in `data/test_dataset.json`.
+Summary, `overall_sentiment` (`positive`/`negative`/`neutral`), and `contains_conflicting_signals` (`true`/`false`) come from the Summarizer's LLM output. Summary faithfulness is judged by Ragas (LLM call). Sentiment accuracy is checked against labels in `data/test_dataset.json`. The split schema gives downstream consumers a clear directional signal for routing/aggregation while separately preserving the nuance of feedback that has both positive and negative aspects.
 
 ### Adaptive Robustness Testing
 
@@ -89,7 +89,7 @@ The adaptive approach avoids this by using the model's own baseline as the refer
 ```text
 llm-eval/
 ├── src/llm_eval/
-│   ├── summarizer.py              # LLM summarization + sentiment
+│   ├── summarizer.py              # LLM summarization + sentiment + conflict detection
 │   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
 │   ├── robustness_checker.py      # Adaptive injection testing
 │   └── logging_callback.py        # LLM request/response logging

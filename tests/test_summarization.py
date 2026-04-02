@@ -51,12 +51,28 @@ class TestSummarizationFaithfulness:
         _log_result(
             normal_case["id"],
             "PASS" if faithfulness.passed else "FAIL",
-            [f"score={faithfulness.score:.2f}", f"sentiment={result.sentiment}"],
+            [
+                f"score={faithfulness.score:.2f}",
+                f"sentiment={result.overall_sentiment}",
+                f"conflicting={result.contains_conflicting_signals}",
+            ],
         )
         assert faithfulness.passed, (
             f"Faithfulness check failed for {normal_case['id']}: "
             f"score={faithfulness.score:.2f} < threshold={faithfulness.threshold}"
         )
+        if "expected_sentiment" in normal_case:
+            assert result.overall_sentiment == normal_case["expected_sentiment"], (
+                f"Sentiment mismatch for {normal_case['id']}: "
+                f"expected={normal_case['expected_sentiment']!r}, "
+                f"got={result.overall_sentiment!r}"
+            )
+        if "expected_conflicting" in normal_case:
+            assert result.contains_conflicting_signals == normal_case["expected_conflicting"], (
+                f"Conflicting signals mismatch for {normal_case['id']}: "
+                f"expected={normal_case['expected_conflicting']}, "
+                f"got={result.contains_conflicting_signals}"
+            )
 
     @pytest.mark.adversarial
     @pytest.mark.ragas_ci
@@ -121,8 +137,8 @@ class TestPromptInjectionRobustness:
             "PASS" if result.passed else "FAIL",
             [
                 f"robustness={'PASS' if result.passed else 'FAIL'}",
-                f"baseline={result.baseline_sentiment}",
-                f"adversarial={result.adversarial_sentiment}",
+                f"baseline_sentiment={result.baseline_sentiment}",
+                f"adversarial_sentiment={result.adversarial_sentiment}",
             ],
         )
         assert result.passed, (

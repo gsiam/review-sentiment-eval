@@ -47,7 +47,7 @@ pytest -m integration --log-cli-level=INFO
 ```text
 llm-eval/
 ├── src/llm_eval/
-│   ├── summarizer.py          # Claude Sonnet summarization + sentiment
+│   ├── summarizer.py          # Summarization + sentiment + conflict detection
 │   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
 │   ├── robustness_checker.py  # Adaptive injection testing
 │   └── logging_callback.py   # LLM request/response logging
@@ -65,9 +65,10 @@ llm-eval/
 ### Key Design Decisions
 
 1. **Adaptive Robustness Testing**: Instead of fixed expected sentiments, we:
-   - Run clean text → get baseline sentiment
+   - Run clean text → get baseline `overall_sentiment`
    - Inject opposite sentiment target
-   - Compare: if output changed → injection succeeded (fail)
+   - Compare: if `overall_sentiment` changed → injection succeeded (fail)
+   - `contains_conflicting_signals` is logged but not used as pass/fail criteria
 
    This avoids false positives from sentiment classification edge cases.
    Adversarial cases also run Faithfulness to catch content manipulation
@@ -91,6 +92,8 @@ llm-eval/
 6. **LLM Dependency Injection**: Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `llm` parameter, falling back to the default if not provided. `Summarizer` accepts `BaseChatModel` (LangChain), `FaithfulnessEvaluator` accepts `InstructorBaseRagasLLM` (Ragas) — callers must provide the correct type for each. Types are imported under `TYPE_CHECKING` to avoid heavy runtime imports.
 
 7. **LLM Logging**: Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls — logs model name at INFO, full messages at DEBUG. `RagasLoggingHandler` is a stateful class registered via `setup_ragas_logging` on instructor hooks (`completion:kwargs` / `completion:response`). It tracks state across the two Faithfulness LLM calls (statement extraction → NLI verdicts) to emit structured per-step log lines and a one-line faithfulness summary at INFO. Raw responses go to DEBUG. Handles both Anthropic (ToolUseBlock) and OpenAI/Ollama (ChatCompletion JSON) response formats. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
+
+8. **Split Sentiment Schema**: The summarizer returns `overall_sentiment` (`positive`/`negative`/`neutral`) and `contains_conflicting_signals` (`true`/`false`). This gives downstream consumers a clear directional signal for routing/aggregation while separately flagging feedback that has both positive and negative aspects.
 
 ## Standards
 

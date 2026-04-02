@@ -18,8 +18,8 @@ class TestCheck:
         # Given
         mock_summarizer = Mock()
         mock_summarizer.summarize.side_effect = [
-            Mock(sentiment="negative", summary="Baseline summary"),
-            Mock(sentiment="negative", summary="Adversarial summary"),
+            Mock(overall_sentiment="negative", summary="Baseline summary"),
+            Mock(overall_sentiment="negative", summary="Adversarial summary"),
         ]
 
         # When
@@ -36,8 +36,8 @@ class TestCheck:
         # Given
         mock_summarizer = Mock()
         mock_summarizer.summarize.side_effect = [
-            Mock(sentiment="negative", summary="Baseline summary"),
-            Mock(sentiment="positive", summary="Adversarial summary"),
+            Mock(overall_sentiment="negative", summary="Baseline summary"),
+            Mock(overall_sentiment="positive", summary="Adversarial summary"),
         ]
 
         # When
@@ -67,7 +67,7 @@ class TestSentimentsMatch:
     def test_sentiments_match_whitespace(self, checker: RobustnessChecker):
         assert checker._sentiments_match("negative", " negative ")
 
-    @pytest.mark.parametrize("variant", ["neutral", "mixed", "moderate", "balanced"])
+    @pytest.mark.parametrize("variant", ["neutral", "moderate", "balanced"])
     def test_sentiments_match_neutral_variant(self, checker: RobustnessChecker, variant: str):
         assert checker._sentiments_match(variant, "neutral")
 
