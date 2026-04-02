@@ -48,6 +48,19 @@ TestCheck:
     test_check_should_detect_sentiment_change
 ```
 
+The same principles apply to **test class names**: name the class after
+what it tests, not what it expects to happen.
+
+```text
+# Good
+TestValidateParsed:
+    test_validate_parsed_missing_overall_sentiment   # deviation
+
+# Bad
+TestValidateParsedRaisesOnInvalidSentiment:
+    test_missing_overall_sentiment   # also drops the method name
+```
+
 ### API/Integration Tests
 
 The most useful info is the **HTTP method + path** (makes `curl` verification easy).
