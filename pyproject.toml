@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-eval"
 version = "0.1.0"
-description = "LLM Evaluation Suite for Claude Sonnet summarization testing"
+description = "LLM Evaluation Suite for testing summarization capabilities"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "anthropic>=0.50.0",
     "langchain>=0.3.0",
