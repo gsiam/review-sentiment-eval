@@ -2,7 +2,7 @@
 
 ## Keeping Docs in Sync
 
-- **Check README.md and CLAUDE.md after any user-facing change** — new CLI options, renamed files, changed dependencies, or altered architecture should be reflected in both. Don't wait for a separate "docs" step.
+- **Check README.md, CLAUDE.md, and `docs/design-decisions.md` after any user-facing change** — new CLI options, renamed files, changed dependencies, or altered architecture should be reflected in the appropriate file. Don't wait for a separate "docs" step.
 
 ## Flowcharts (Mermaid)
 
