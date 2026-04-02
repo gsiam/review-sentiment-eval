@@ -59,7 +59,7 @@ llm-eval/
 │   ├── test_faithfulness_evaluator_unit.py
 │   └── test_logging_callback_unit.py
 └── data/
-    └── test_dataset.json      # 5 normal + 2 adversarial cases
+    └── test_dataset.json      # 6 normal + 2 adversarial cases
 ```
 
 ### Key Design Decisions
@@ -93,7 +93,7 @@ llm-eval/
 
 7. **LLM Logging**: Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls — logs model name at INFO, full messages at DEBUG. `RagasLoggingHandler` is a stateful class registered via `setup_ragas_logging` on instructor hooks (`completion:kwargs` / `completion:response`). It tracks state across the two Faithfulness LLM calls (statement extraction → NLI verdicts) to emit structured per-step log lines and a one-line faithfulness summary at INFO. Raw responses go to DEBUG. Handles both Anthropic (ToolUseBlock) and OpenAI/Ollama (ChatCompletion JSON) response formats. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
 
-8. **Split Sentiment Schema**: The summarizer returns `overall_sentiment` (`positive`/`negative`/`neutral`) and `contains_conflicting_signals` (`true`/`false`). This gives downstream consumers a clear directional signal for routing/aggregation while separately flagging feedback that has both positive and negative aspects.
+8. **Split Sentiment Schema**: The summarizer returns `overall_sentiment` (`positive`/`negative`/`neutral`) and `contains_conflicting_signals` (`true`/`false`). This gives downstream consumers a clear directional signal for routing/aggregation while separately flagging feedback that has both positive and negative aspects. The system prompt defines `overall_sentiment` as the customer's bottom-line takeaway (not a count of pros vs cons), with explicit tie-breaker rules: positive if broadly satisfied/would buy again, negative if broadly dissatisfied/would avoid, neutral only if no clear overall leaning. This operational definition is necessary — without it, ambiguous reviews (strong positive product + strong negative logistics) classify inconsistently as neutral.
 
 ## Standards
 
@@ -105,7 +105,7 @@ Refer to `.standards/general/`, `.standards/python/`,
 ### Project-Specific
 
 - Python 3.10+
-- Pytest markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.adversarial`
+- Pytest markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.adversarial`, `@pytest.mark.ragas_ci`
 
 ### Dependencies
 
