@@ -118,6 +118,17 @@ assert "Hello" in caplog.text
 - **Test ordering within a class:** happy path and core behavior first,
   boundary cases next, then defensive/edge cases last
 
+## Test Data Expansion
+
+Before adding new test cases to a dataset, run an equivalence class (EC)
+analysis against the existing cases. Each new case should target an EC that
+is not already covered. If a proposed case overlaps with an existing EC,
+decide whether the boundary is a genuine gray area — if so, keeping both
+cases is justified; if not, drop the redundant one.
+
+This prevents redundant cases from accumulating while still allowing
+deliberate duplication where the boundary between ECs is fuzzy.
+
 ## Test Independence
 
 Tests must be fully self-contained — no shared mutable state, no execution
