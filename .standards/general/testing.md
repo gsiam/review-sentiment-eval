@@ -126,6 +126,10 @@ is not already covered. If a proposed case overlaps with an existing EC,
 decide whether the boundary is a genuine gray area — if so, keeping both
 cases is justified; if not, drop the redundant one.
 
+When there is a natural boundary between ECs, prefer cases that exercise
+the boundary value — other values within the same EC trigger the same
+failure mode, so interior cases add volume without adding signal.
+
 This prevents redundant cases from accumulating while still allowing
 deliberate duplication where the boundary between ECs is fuzzy.
 
