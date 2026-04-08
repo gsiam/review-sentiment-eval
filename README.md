@@ -32,7 +32,7 @@ graph TD
     end
 
     subgraph "Test Data"
-        DATA[test_dataset.json<br/>normal + adversarial cases]
+        DATA[test_dataset.json<br/>normal + adversarial + judge-calibration cases]
     end
 
     UT --> S
@@ -101,7 +101,7 @@ llm-eval/
 │   ├── test_robustness_checker_unit.py
 │   └── test_logging_callback_unit.py
 └── data/
-    └── test_dataset.json          # 5 normal + 2 adversarial cases
+    └── test_dataset.json          # 13 normal + 6 adversarial + 6 judge-calibration cases
 ```
 
 ## Setup
@@ -133,6 +133,12 @@ pytest -m integration
 
 # All tests
 pytest -v
+
+# Faithfulness evaluation tests only (Ragas, requires API key)
+pytest -m ragas_ci
+
+# Prompt injection robustness tests only
+pytest -m adversarial
 
 # With LLM request/response logs
 pytest -m integration --log-cli-level=INFO

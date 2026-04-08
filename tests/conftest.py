@@ -118,11 +118,25 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         dataset_path = DATA_DIR / "test_dataset.json"
         with open(dataset_path) as f:
             data = json.load(f)
-        normal_cases = [c for c in data["test_cases"] if not c["is_adversarial"]]
+        normal_cases = [
+            c for c in data["test_cases"]
+            if not c["is_adversarial"] and not c["is_judge_calibration"]
+        ]
         metafunc.parametrize(
             "normal_case",
             normal_cases,
             ids=[case["id"] for case in normal_cases],
+        )
+
+    if "judge_calibration_case" in metafunc.fixturenames:
+        dataset_path = DATA_DIR / "test_dataset.json"
+        with open(dataset_path) as f:
+            data = json.load(f)
+        calibration_cases = [c for c in data["test_cases"] if c["is_judge_calibration"]]
+        metafunc.parametrize(
+            "judge_calibration_case",
+            calibration_cases,
+            ids=[case["id"] for case in calibration_cases],
         )
 
     if "adversarial_case" in metafunc.fixturenames:

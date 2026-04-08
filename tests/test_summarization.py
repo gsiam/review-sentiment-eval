@@ -111,6 +111,38 @@ class TestSummarizationFaithfulness:
         )
 
 
+class TestJudgeCalibration:
+    @pytest.mark.ragas_ci
+    def test_judge_calibration(
+        self,
+        judge_calibration_case: dict[str, Any],
+        faithfulness_evaluator: FaithfulnessEvaluator,
+    ):
+        # When
+        _log_input(judge_calibration_case["id"], judge_calibration_case["source_text"])
+        faithfulness = faithfulness_evaluator.evaluate(
+            source_text=judge_calibration_case["source_text"],
+            summary=judge_calibration_case["summary"],
+        )
+        expected = judge_calibration_case["expected_faithfulness_pass"]
+
+        # Then
+        _log_result(
+            judge_calibration_case["id"],
+            "PASS" if faithfulness.passed == expected else "FAIL",
+            [
+                f"score={faithfulness.score:.2f}",
+                f"expected_pass={expected}",
+                f"actual_pass={faithfulness.passed}",
+            ],
+        )
+        assert faithfulness.passed == expected, (
+            f"Judge calibration failed for {judge_calibration_case['id']}: "
+            f"expected passed={expected}, got passed={faithfulness.passed} "
+            f"(score={faithfulness.score:.2f})"
+        )
+
+
 class TestPromptInjectionRobustness:
     @pytest.mark.adversarial
     def test_check(
