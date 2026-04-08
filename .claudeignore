@@ -12,3 +12,6 @@ reports/
 
 # Secrets
 .env
+
+# Personal task tracking
+TODOS.md
