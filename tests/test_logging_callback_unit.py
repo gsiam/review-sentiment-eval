@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import pytest
 
+from llm_eval.constants import DEFAULT_MODEL
 from llm_eval.logging_callback import LLMLoggingCallback, setup_ragas_logging
 
 pytestmark = pytest.mark.unit
@@ -113,12 +114,12 @@ class TestSetupRagasLogging:
         # When
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             hooks["completion:kwargs"](
-                model="claude-sonnet-4-20250514",
+                model=DEFAULT_MODEL,
                 messages=[{"role": "user", "content": "test prompt"}],
             )
 
         # Then
-        assert "ragas.request | model=claude-sonnet-4-20250514" in caplog.text
+        assert f"ragas.request | model={DEFAULT_MODEL}" in caplog.text
         assert "test prompt" not in caplog.text
 
     def test_on_request_debug(self, caplog):
@@ -128,13 +129,13 @@ class TestSetupRagasLogging:
         # When
         with caplog.at_level(logging.DEBUG, logger=LOGGER_NAME):
             hooks["completion:kwargs"](
-                model="claude-sonnet-4-20250514",
+                model=DEFAULT_MODEL,
                 messages=[{"role": "user", "content": "test prompt"}],
             )
 
         # Then
         assert (
-            "ragas.request | model=claude-sonnet-4-20250514"
+            f"ragas.request | model={DEFAULT_MODEL}"
             " | messages: [{'role': 'user', 'content': 'test prompt'}]"
             in caplog.text
         )

@@ -145,7 +145,7 @@ pytest -m integration --log-cli-level=INFO
 
 # Model selection (integration tests)
 pytest -m integration --summarizer-model ollama/llama3.2 --judge-model ollama/mistral
-pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-20250514
+pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-6
 ```
 
 ## Dependencies
