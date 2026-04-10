@@ -11,11 +11,16 @@ pytestmark = pytest.mark.unit
 DEFAULT_THRESHOLD = FaithfulnessEvaluator.DEFAULT_THRESHOLD
 
 
+@pytest.fixture()
+def mock_async_anthropic():
+    with patch("llm_eval.faithfulness_evaluator.AsyncAnthropic") as mock:
+        yield mock
+
+
 @pytest.fixture(autouse=True)
-def _mock_llm_deps():
+def _mock_llm_deps(mock_async_anthropic):
     """Prevent real LLM client construction and metric validation in all tests."""
     with (
-        patch("llm_eval.faithfulness_evaluator.AsyncAnthropic"),
         patch("llm_eval.faithfulness_evaluator.llm_factory"),
         patch("llm_eval.faithfulness_evaluator.Faithfulness"),
     ):
@@ -132,3 +137,10 @@ class TestEvaluatorConfiguration:
 
         # Then
         assert evaluator.threshold == custom_threshold
+
+    def test_max_retries(self, mock_async_anthropic):
+        # When
+        FaithfulnessEvaluator()
+
+        # Then
+        mock_async_anthropic.assert_called_once_with(max_retries=6)

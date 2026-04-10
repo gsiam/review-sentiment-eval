@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from llm_eval.constants import DEFAULT_MODEL
+from llm_eval.constants import DEFAULT_MODEL, MAX_RETRIES
 from llm_eval.faithfulness_evaluator import FaithfulnessEvaluator
 from llm_eval.logging_callback import LLMLoggingCallback, setup_ragas_logging
 from llm_eval.robustness_checker import RobustnessChecker
@@ -54,7 +54,7 @@ def _make_summarizer_llm(model_spec: str) -> BaseChatModel:
 
     from langchain_anthropic import ChatAnthropic
 
-    return ChatAnthropic(model=model_spec, temperature=0, callbacks=callbacks)
+    return ChatAnthropic(model=model_spec, temperature=0, callbacks=callbacks, max_retries=MAX_RETRIES)
 
 
 def _make_judge_llm(model_spec: str) -> InstructorBaseRagasLLM:
@@ -79,13 +79,15 @@ def _make_judge_llm(model_spec: str) -> InstructorBaseRagasLLM:
         llm = llm_factory(
             model=model_spec,
             provider="anthropic",
-            client=AsyncAnthropic(),
+            client=AsyncAnthropic(max_retries=MAX_RETRIES),
             temperature=0,
         )
+        # Ragas 0.4.3 hardcodes top_p=0.1; Anthropic rejects requests with
+        # both temperature and top_p (HTTP 400). Remove until upstream fix.
+        llm.model_args.pop("top_p", None)
 
     setup_ragas_logging(llm)
     return llm
-
 
 
 @pytest.fixture(scope="session")

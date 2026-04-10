@@ -9,7 +9,7 @@ from anthropic import AsyncAnthropic
 from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness
 
-from llm_eval.constants import DEFAULT_MODEL
+from llm_eval.constants import DEFAULT_MODEL, MAX_RETRIES
 
 if TYPE_CHECKING:
     from ragas.llms import InstructorBaseRagasLLM
@@ -38,9 +38,13 @@ class FaithfulnessEvaluator:
         self.llm = llm or llm_factory(
             model=model,
             provider="anthropic",
-            client=AsyncAnthropic(),
+            client=AsyncAnthropic(max_retries=MAX_RETRIES),
             temperature=0,
         )
+        # Ragas 0.4.3 hardcodes top_p=0.1; Anthropic rejects requests with
+        # both temperature and top_p (HTTP 400). Remove until upstream fix.
+        if llm is None:
+            self.llm.model_args.pop("top_p", None)
         self.faithfulness = Faithfulness(llm=self.llm)
 
     def evaluate(self, source_text: str, summary: str) -> FaithfulnessResult:

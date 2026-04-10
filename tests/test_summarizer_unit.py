@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from llm_eval.constants import DEFAULT_MODEL
 from llm_eval.summarizer import Summarizer
 
 pytestmark = pytest.mark.unit
@@ -236,3 +237,17 @@ class TestParseResponseFallback:
         assert result["summary"] == raw
         assert result["overall_sentiment"] == "neutral"
         assert result["contains_conflicting_signals"] is False
+
+
+class TestSummarizerInit:
+    @patch("llm_eval.summarizer.ChatAnthropic")
+    def test_max_retries(self, mock_chat):
+        # When
+        Summarizer()
+
+        # Then
+        mock_chat.assert_called_once_with(
+            model=DEFAULT_MODEL,
+            temperature=0,
+            max_retries=6,
+        )
