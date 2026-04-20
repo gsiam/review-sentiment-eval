@@ -31,6 +31,8 @@ Four configurations across a 2×2 matrix of summarizer × judge strength:
 
 SW and WS both use one API call per case (summarizer or judge) and one local call — the API leg finishes in seconds, so wall time depends on local hardware (GPU, RAM) and how much work the local model does. SW is consistently slower because the local step is judging (Mistral running two Ragas calls per case); WS is faster because llama3.2 is smaller and only does summarization. First-run latency for Ollama configs includes cold model loading into memory — WS run 1 took ~15 min vs ~5 min once warm. WW is the only fully private config.
 
+> **Note — Ragas `top_p` compatibility:** Ragas 0.3.6 passes `top_p` to `ChatAnthropic.with_structured_output()`, which rejects it as unsupported. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: vibrantlabsai/ragas#2674. This affects all configs that use the Sonnet judge (SS, SW, WS).
+
 ---
 
 ## 2. Results Comparison
@@ -63,7 +65,7 @@ Median [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries mar
 
 **Notable:**
 
-- **SS (48/48)** — lowest score is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; everything else ≥0.88. Zero failures across 3 runs.
+- **SS (48/48)** — lowest score is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; everything else ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see §7.7).
 - **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (median 1.00, flagged unstable). `negative_sarcasm` has a 0.75 median but hits 1.00 on run 1.
 - **WS** — `negative_sarcasm` collapses to 0.00 in all 3 runs. llama3.2 strips the sarcasm and writes a literal "customer loves it" summary, which Sonnet correctly scores as unfaithful to the actually-negative source. This is a summarizer failure surfaced through the judge.
 - **WW** — `positive_negation_double` (0.67) is the lone threshold failure; Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral fails to catch the same llama3.2 hallucination that Sonnet flagged — a false positive on faithfulness driven by weak-judge leniency.
@@ -262,7 +264,7 @@ See Figs. 4a–b for score distributions across faithful and unfaithful calibrat
 - The **old calibration cluster** (hallucinated, negation_flip, attribution_swap, number_swap) is still cleanly separated from the faithful cluster for both judges (0.60 max vs 1.00 min), and 0.70 is still a valid threshold for these error types.
 - The **new magnitude/scope/spec cluster** exposes a fundamental Ragas limitation: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim is not literally false. Both judges miss `magnitude_precision`. Sonnet also misses `magnitude_severity` unstably (SS: [0.00, 1.00, 1.00], median 1.00 flagged unstable) — so the strong judge has 2 misses in total. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses.
 - **Sonnet judge's `spec_simplification` false-flag** is the opposite failure mode: Sonnet treats a correct terminology expansion ("DSE" → "dirty screen effect") as unsupported inference in 3 of 6 Sonnet-judged runs (SS 1/3, WS 2/3). Mistral doesn't, because its domain knowledge is shallower.
-- The threshold itself does not need adjustment — raising it wouldn't help catch precision-loss errors, because those score 1.00 not just 0.71. The fix is a **different metric**, not a different threshold.
+- The threshold itself does not need adjustment — raising it wouldn't help catch precision-loss errors, because those score 1.00 not just 0.71. The fix is a **different metric**, not a different threshold (see §§7.6–7.7).
 
 ---
 
@@ -354,19 +356,34 @@ Nine of the 10 instabilities fall cleanly into two buckets: a Mistral judge on s
 
 `negative_attribution_multiparty` is the inverse pattern: WS median 1.00 [0.80–1.00] vs WW median 0.75 [0.75–0.75] — Mistral scores the same llama3.2 summary lower than Sonnet does. Here Sonnet is the more lenient judge on a drift Mistral consistently penalises, so the case does not support the "weak judge always inflates" story; weak-judge leniency is a real pattern (see `negative_sarcasm`) but it is not universal.
 
-### 7.5 Ragas `top_p` kwarg bug
-
-Ragas 0.3.6 passes `top_p` to langchain's `ChatAnthropic.with_structured_output()`, which rejects it as unsupported. The project-local workaround (`model_args.pop("top_p", None)` in `FaithfulnessEvaluator.__init__` and `tests/conftest.py::_make_judge_llm`) is still required. Upstream issue: vibrantlabsai/ragas#2674. Removing the workaround will break SS, SW, WS for the strong-judge call path.
-
-### 7.6 JSON compliance (llama3.2)
+### 7.5 JSON compliance (llama3.2)
 
 llama3.2 produced **zero JSON parse failures** across 6 weak-config runs × 40 summarize calls per run = **240 summarizer calls** (WS and WW, 3 runs each). The prompt's schema example is doing its job. This is a genuine improvement over less-constrained prompting and removes one common weak-model failure mode from the risk list.
 
-### 7.7 Ragas metric limitation (new)
+### 7.6 Faithfulness misses precision loss and under-specification
 
 The 3 new calibration misses (`magnitude_precision`, `magnitude_severity`, `scope_condition`) all share a pattern: the unfaithful summary is **not literally false**, it is **under-specified**. Ragas's statement-decomposition approach checks whether each atomic claim is supported, and "the blender quickly blends fruit" is consistent with "pulverizes in under 10 seconds" at the claim level. The metric cannot penalise precision loss.
 
-**This is a threshold-independent gap.** Raising the threshold to 0.80 or 0.90 wouldn't catch these because the scores are 1.00. The fix, if needed, is a complementary metric (e.g., a precision/recall style check against quantitative and conditional claims in the source) or an additional guardrail prompt that specifically tests for information preservation on numeric and conditional statements.
+**This is a threshold-independent gap.** Raising the threshold to 0.80 or 0.90 wouldn't catch these because the scores are 1.00.
+
+**Mitigation**: a complementary metric (e.g., a precision/recall style check against quantitative and conditional claims in the source) or an additional guardrail prompt that specifically tests for information preservation on numeric and conditional statements.
+
+### 7.7 Faithfulness can invert apparent summarizer quality rankings
+
+Several normal cases show **WS scoring higher than SS** under the same Sonnet judge — the clearest examples being `negative_timeline_shipping` (SS median 0.71 vs WS 1.00) and `positive_conflicting_override` (SS 0.89 vs WS 1.00). The surface reading — that the weak summarizer produced better output — is misleading. This is the mirror image of §7.6: where §7.6 shows the metric *missing* under-specified claims, here it is *correctly penalising* over-specified ones. The strong model hallucinates; the weak model stays literal.
+
+The `negative_timeline_shipping` run-1 logs make the mechanism concrete. The source text states: *"Placed the order on March 1st. The estimated delivery was March 5th."* Two SS statements failed:
+
+- **"The estimated delivery window for the customer's order was 5 days."** The source gives a specific date (March 5th), not a duration. The model derived a number-of-days figure that isn't in the source, and reframed a point estimate as a range ("window" implies a multi-day band, not a fixed arrival date). Both the number and the framing are hallucinated.
+- **"The customer has been waiting over 14 days for a refund."** The source says the refund has not arrived *after* 14 days. "Over 14 days" adds a directional embellishment — implying the wait is ongoing and beyond 14 — that isn't stated.
+
+The WS summary decomposed into 6 statements, all faithful. The weak model paraphrased the source literally: "placed an order on March 1st", "nearly three weeks to arrive", "refund has not appeared after 14 days". No derivations, no embellishments, no extra specificity.
+
+**The metric is working correctly.** The Sonnet judge caught genuine hallucinations in the SS output. The issue is not a scoring error — it is a design consequence: faithfulness measures whether every claim is supported by the source, but it does not measure how much of the source is covered. A minimal, ultra-literal paraphrase scores 1.00; a richer summary that introduces one plausible but unsupported inference scores lower, even if a human evaluator would find it more useful.
+
+**This creates structural pressure toward conservative, minimal output.** A system optimising for faithfulness score alone could theoretically maximise it by producing shorter summaries with fewer claims — each one trivially traceable to the source. That is not a useful summariser. It means faithfulness rankings can *invert* perceived quality rankings, and the inversion grows stronger as the summariser becomes more capable and more willing to synthesise.
+
+**Mitigation**: pair faithfulness with a **recall or coverage-style counterpart** — a metric that asks whether the summary represents the key claims in the source, not just whether its own claims are supported (e.g., Ragas `answer_recall`, or a custom check that scores how many source-side claims appear in the summary). Without it, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal" (see also §4).
 
 ---
 
