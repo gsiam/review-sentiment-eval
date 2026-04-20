@@ -54,6 +54,11 @@ Refer to `.standards/general/`, `.standards/python/`,
 
 **Before writing or modifying code, read the relevant `.standards/` files first.** Apply them from the start — don't write code then check compliance after.
 
+### Analysis Data
+
+- `reports/aggregated.json` is the canonical data backing `docs/model-configuration-analysis.md`. It is tracked in git. Do not read it directly — run `scripts/model_doc_audit.py` instead to surface specific numbers without flooding the context window.
+- Run logs (`reports/*.log`, `reports/archive/`) are gitignored — large and already distilled into `aggregated.json`.
+
 ### Project-Specific
 
 - Python 3.10+

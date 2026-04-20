@@ -10,7 +10,8 @@ htmlcov/
 
 .DS_Store
 
-reports/
+reports/*.log
+reports/archive/
 
 TODOS.md
 
