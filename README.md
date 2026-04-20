@@ -117,6 +117,9 @@ pip install -e .
 # For local model support (Ollama)
 pip install -e ".[local]"
 
+# For regenerating analysis charts (scripts/generate_*.py)
+pip install -e ".[docs]"
+
 # Configure API key
 cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY

@@ -27,6 +27,9 @@ dev = [
 local = [
     "langchain-ollama>=0.3.0",
 ]
+docs = [
+    "matplotlib>=3.7.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
