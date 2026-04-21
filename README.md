@@ -8,6 +8,16 @@ A testing framework for evaluating LLM summarization capabilities, focusing on *
 
 2. **Prompt Injection Vulnerability** - Uses adaptive behavioral analysis to detect if injected instructions can manipulate model outputs
 
+## Analysis and Findings
+
+Evaluating a probabilistic system produces two kinds of output: a verdict on the current system, and a map of things to improve next. This project captures both.
+
+- **[Model Configuration Analysis](docs/model-configuration-analysis.md)** — a four-configuration comparison (strong/weak summarizer × strong/weak judge) across 34 cases and 3 runs each, covering faithfulness, sentiment accuracy, adversarial robustness, and judge calibration. Includes threshold validation, methodology risks, and a recommendation for which configuration to use in CI. *Answers:* which models should I use?
+- **[Exploratory Findings](docs/exploratory-findings.md)** — five prompt-improvement candidates for the summarizer that emerged during the configuration analysis, each with supporting evidence and a proposed intervention. Opens with a short argument on why AI evaluation work necessarily has an exploratory character that deterministic testing does not. *Proposes candidates for:* what should the summarizer prompt say for the next iteration?
+- **[Design Decisions](docs/design-decisions.md)** — architectural choices and trade-offs made while building the evaluation suite itself.
+
+The two analysis documents are complementary: one holds the prompts fixed and varies the models; the other derives prompt-change hypotheses from those results for later fixed-model testing. Together they describe both the current system and the direction of its next iteration.
+
 ## Architecture
 
 ```mermaid

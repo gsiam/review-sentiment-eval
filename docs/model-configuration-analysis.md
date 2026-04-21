@@ -31,7 +31,7 @@ Four configurations across a 2×2 matrix of summarizer × judge strength:
 
 SW and WS both use one API call per case (summarizer or judge) and one local call — the API leg finishes in seconds, so wall time depends on local hardware (GPU, RAM) and how much work the local model does. SW is consistently slower because the local step is judging (Mistral running two Ragas calls per case); WS is faster because llama3.2 is smaller and only does summarization. First-run latency for Ollama configs includes cold model loading into memory — WS run 1 took ~15 min vs ~5 min once warm. WW is the only fully private config.
 
-> **Note — Ragas `top_p` compatibility:** Ragas 0.3.6 passes `top_p` to `ChatAnthropic.with_structured_output()`, which rejects it as unsupported. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: vibrantlabsai/ragas#2674. This affects all configs that use the Sonnet judge (SS, SW, WS).
+> **Note — Ragas `top_p` compatibility:** Ragas 0.3.6 passes `top_p` to `ChatAnthropic.with_structured_output()`, which rejects it as unsupported. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: [vibrantlabsai/ragas#2674](https://github.com/vibrantlabsai/ragas/issues/2674). This affects all configs that use the Sonnet judge (SS, SW, WS).
 
 ---
 
@@ -65,14 +65,14 @@ Median [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries mar
 
 **Notable:**
 
-- **SS (48/48)** — lowest score is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; everything else ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see §7.7).
-- **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (median 1.00, flagged unstable). `negative_sarcasm` has a 0.75 median but hits 1.00 on run 1.
+- **SS (48/48)** — lowest median is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; all other medians ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see §7.7).
+- **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (median 1.00). `negative_sarcasm` has a 0.75 median, above threshold.
 - **WS** — `negative_sarcasm` collapses to 0.00 in all 3 runs. llama3.2 strips the sarcasm and writes a literal "customer loves it" summary, which Sonnet correctly scores as unfaithful to the actually-negative source. This is a summarizer failure surfaced through the judge.
 - **WW** — `positive_negation_double` (0.67) is the lone threshold failure; Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral fails to catch the same llama3.2 hallucination that Sonnet flagged — a false positive on faithfulness driven by weak-judge leniency.
 
 ![§2a Normal-case faithfulness heatmap](images/heatmap_normal_faithfulness.png)
 
-*Fig. 2a. Green–yellow–red colormap centred at the 0.70 threshold. Bold = threshold failure; \* = unstable (range > 0.2).*
+*Fig. 2a. Green–yellow–red colourmap centred at the 0.70 threshold. Bold = threshold failure; \* = unstable (range > 0.2).*
 
 ### 2b. Sentiment accuracy — 16 cases with `expected_sentiment`
 
@@ -89,7 +89,7 @@ Median [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries mar
 
 | Case | Expected | SS | SW | WS | WW |
 |---|---|---|---|---|---|
-| positive_conflicting_conditional | positive | ✗ neutral×2 / negative×1 | ✗ neutral×1 / negative×2 | ✓ positive | ✓ positive |
+| positive_conflicting_conditional | positive | ✗ 2 neutral, 1 negative | ✗ 1 neutral, 2 negative | ✓ positive | ✓ positive |
 | negative_conflicting_logistics | negative | ✓ negative | ✓ negative | ✗ positive | ✗ positive |
 | negative_sarcasm | negative | ✓ negative | ✓ negative | ✗ positive | ✗ positive |
 
@@ -411,3 +411,11 @@ The WS summary decomposed into 6 statements, all faithful. The weak model paraph
 5. **Split-schema sentiment + conflicting** (already in place) works — the strong summarizer achieves 30/30 conflicting accuracy, weak summarizer 21/30, and the failure patterns are interpretable. Do not merge the fields back.
 
 6. **Next expansion**: a cross-family judge experiment. Pairing Sonnet summarizer with a GPT-4 or Gemini judge on the existing 34-case dataset would close the largest remaining methodology gap the current data cannot refute (§7.1, §7.2).
+
+---
+
+## 10. Relation to the Exploratory Findings Document
+
+This analysis treats the summarizer and judge prompts as fixed and varies the model backends. Holding the prompts constant is deliberate — it isolates the configuration axis and keeps this document as a single comparable evaluation.
+
+During the analysis, several failure patterns surfaced that point to changes in the summarizer prompt rather than the model selection — for example, the strong summarizer's over-derivation on `negative_timeline_shipping` (§7.7) and the weak summarizer's sarcasm blindness (§3.1). Those belong to a *different* system under test, so they are documented separately in [exploratory-findings.md](exploratory-findings.md) as inputs to a follow-up evaluation cycle.
