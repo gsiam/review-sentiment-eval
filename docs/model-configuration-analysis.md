@@ -113,7 +113,7 @@ Conversely, **the weak summarizer is blind to sarcasm** (`negative_sarcasm`) and
 | positive_conflicting_conditional | True | ✓ | ✓ | ✓ | ✓ |
 | **Accuracy** | | **30/30** | **30/30** | **21/30** | **21/30** |
 
-Weak summarizer misses `conflicting=true` on the three cases where the conflict requires distinguishing a dominant sentiment from a secondary qualification (attribution, override, explicit "but" clauses). Where the conflict is syntactically louder — a distractor sentence, a shift in tense, a direct "however" — llama3.2 catches it. The four new conflicting cases (`borderline`, `noise`, `conditional`, `override`) split: `override` fails on WS/WW (patterning like the dominant-plus-qualification cases above), while `borderline`, `noise`, and `conditional` all pass in every config.
+Weak summarizer misses `conflicting=true` on the three cases where the conflict requires distinguishing a dominant sentiment from a secondary qualification (attribution, override, explicit "but" clauses). Where the conflict is syntactically louder — a distractor sentence, a shift in tense, a direct "however" — llama3.2 catches it. The remaining four conflicting cases (`borderline`, `noise`, `conditional`, `override`) split: `override` fails on WS/WW (patterning like the dominant-plus-qualification cases above), while `borderline`, `noise`, and `conditional` all pass in every config.
 
 ### 2d. Adversarial results
 
@@ -261,16 +261,16 @@ See Figs. 4a–b for score distributions across faithful and unfaithful calibrat
 
 ### Assessment
 
-- The **old calibration cluster** (hallucinated, negation_flip, attribution_swap, number_swap) is still cleanly separated from the faithful cluster for both judges (0.60 max vs 1.00 min), and 0.70 is still a valid threshold for these error types.
-- The **new magnitude/scope/spec cluster** exposes a fundamental Ragas limitation: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim is not literally false. Both judges miss `magnitude_precision`. Sonnet also misses `magnitude_severity` unstably (SS: [0.00, 1.00, 1.00], median 1.00 flagged unstable) — so the strong judge has 2 misses in total. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses.
+- The **classic-error cases** (hallucinated, negation_flip, attribution_swap, number_swap) are still cleanly separated from the faithful cluster for both judges (0.60 max vs 1.00 min), and 0.70 is still a valid threshold for these error types.
+- The **precision-loss cases** (magnitude/scope/spec) expose a fundamental Ragas limitation: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim is not literally false. Both judges miss `magnitude_precision`. Sonnet also misses `magnitude_severity` unstably (SS: [0.00, 1.00, 1.00], median 1.00 flagged unstable) — so the strong judge has 2 misses in total. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses.
 - **Sonnet judge's `spec_simplification` false-flag** is the opposite failure mode: Sonnet treats a correct terminology expansion ("DSE" → "dirty screen effect") as unsupported inference in 3 of 6 Sonnet-judged runs (SS 1/3, WS 2/3). Mistral doesn't, because its domain knowledge is shallower.
 - The threshold itself does not need adjustment — raising it wouldn't help catch precision-loss errors, because those score 1.00 not just 0.71. The fix is a **different metric**, not a different threshold (see §§7.6–7.7).
 
 ---
 
-## 5. `negative_conflicting_borderline` (formerly `neutral_balanced_001`)
+## 5. `negative_conflicting_borderline`
 
-This case was converted from a probe (no assertion) to a hard-labelled case (`expected_sentiment: negative`, `expected_conflicting: true`) after the prior single-run analysis found all 4 configurations converging on `negative + conflicting`. The 3-run 4-config data confirms the convergence:
+This case is hard-labelled (`expected_sentiment: negative`, `expected_conflicting: true`). All four configurations converge on `negative + conflicting` with no disagreements across 12 runs:
 
 | Config | Faithfulness | Sentiment | Conflicting |
 |---|---|---|---|
@@ -303,7 +303,7 @@ The "borderline" label is now earned rather than aspirational: the case tests th
 
 **SS** is the quality ceiling and the correct default for CI gating. It has zero faithfulness or robustness failures across 3 runs and its only sentiment failure is the defensible `positive_conflicting_conditional` disagreement. The same-family bias risk is real but not refuted by this data.
 
-**SW** pays API cost for summarization but offloads scoring to local Mistral. It matches SS on sentiment and conflicting accuracy, but introduces adversarial faithfulness failures (driven by Mistral scoring short adversarial outputs erratically) and is calibrated worse than SS on the new unfaithful cases: SW misses `judge_unfaithful_scope_condition` 3/3 (vs SS 3/3 catches) and `judge_unfaithful_magnitude_severity` 0/3 (vs SS 1/3), partly offset by never false-flagging `judge_faithful_spec_simplification` (SW 3/3 correct vs SS 2/3). It trades some evaluation quality for privacy on the judge side.
+**SW** pays API cost for summarization but offloads scoring to local Mistral. It matches SS on sentiment and conflicting accuracy, but introduces adversarial faithfulness failures (driven by Mistral scoring short adversarial outputs erratically) and is calibrated worse than SS on the precision-loss cases: SW misses `judge_unfaithful_scope_condition` 3/3 (vs SS 3/3 catches) and `judge_unfaithful_magnitude_severity` 0/3 (vs SS 1/3), partly offset by never false-flagging `judge_faithful_spec_simplification` (SW 3/3 correct vs SS 2/3). It trades some evaluation quality for privacy on the judge side.
 
 **WS** is summarizer-bound: llama3.2's sarcasm blindness, conflicting-signal collapse, and two injection failures account for most of its failures. Using Sonnet as the judge surfaces these faithfully. Useful as a **capability stress test for weak summarizers**, not as a CI config.
 
@@ -346,7 +346,7 @@ Across 12 runs, 10 (case × config) entries are flagged as unstable (max−min >
 | judge_faithful_spec_simplification | SS | 0.50–1.00 | Sonnet judge sporadic false-flag on "DSE" expansion |
 | judge_faithful_spec_simplification | WS | 0.50–1.00 | Same — judge-driven |
 
-Nine of the 10 instabilities fall cleanly into two buckets: a Mistral judge on short/adversarial outputs, or a Sonnet judge on the new magnitude/spec calibration cases. The one exception is `positive_negation_double` under WS — a Sonnet judge on a normal negation case, flipping between 1.00 and 0.67 as it parses litotes inconsistently. WS vs SS on `judge_unfaithful_magnitude_severity` is particularly striking: identical summary + source + judge, different runs produce 0.00 vs 1.00. A single-run analysis of this case could have told any story.
+Nine of the 10 instabilities fall cleanly into two buckets: a Mistral judge on short/adversarial outputs, or a Sonnet judge on the precision-loss calibration cases. The one exception is `positive_negation_double` under WS — a Sonnet judge on a normal negation case, flipping between 1.00 and 0.67 as it parses litotes inconsistently. WS vs SS on `judge_unfaithful_magnitude_severity` is particularly striking: identical summary + source + judge, different runs produce 0.00 vs 1.00. A single-run analysis of this case could have told any story.
 
 **Mitigation**: 3 runs with median [min–max] is the current policy and it did what it was supposed to — the instabilities are visible, and no single number is load-bearing. Raising to 5 runs would tighten the bands but isn't necessary for the conclusions here.
 
@@ -362,7 +362,7 @@ llama3.2 produced **zero JSON parse failures** across 6 weak-config runs × 40 s
 
 ### 7.6 Faithfulness misses precision loss and under-specification
 
-The 3 new calibration misses (`magnitude_precision`, `magnitude_severity`, `scope_condition`) all share a pattern: the unfaithful summary is **not literally false**, it is **under-specified**. Ragas's statement-decomposition approach checks whether each atomic claim is supported, and "the blender quickly blends fruit" is consistent with "pulverizes in under 10 seconds" at the claim level. The metric cannot penalise precision loss.
+Three calibration misses (`magnitude_precision`, `magnitude_severity`, `scope_condition`) all share a pattern: the unfaithful summary is **not literally false**, it is **under-specified**. Ragas's statement-decomposition approach checks whether each atomic claim is supported, and "the blender quickly blends fruit" is consistent with "pulverizes in under 10 seconds" at the claim level. The metric cannot penalise precision loss.
 
 **This is a threshold-independent gap.** Raising the threshold to 0.80 or 0.90 wouldn't catch these because the scores are 1.00.
 
@@ -390,7 +390,7 @@ The WS summary decomposed into 6 statements, all faithful. The weak model paraph
 ## 8. Dataset Gaps
 
 - **Cross-family evaluator gap** — no configuration uses a non-Anthropic / non-Ollama strong judge. The dataset design stage was partially cross-family (Gemini 3 Pro Preview seeding, see §7.2), but the judge role is still entirely in-family for SS. GPT-4 or Gemini as judge would meaningfully reduce same-family bias risk for the SS config.
-- **Calibration discrimination confirmed** — the 8 new calibration cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surfaced 3 universal judge misses that the old calibration slice (hallucinated, negation_flip, attribution_swap, number_swap) did not. The old slice is still useful; the new slice is more demanding. Both should stay.
+- **Calibration cases cover two distinct failure modes** — the precision-loss cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surface 3 universal judge misses that the classic-error cases (hallucinated, negation_flip, attribution_swap, number_swap) do not. The two groups are not interchangeable (see §7.6).
 - **Multilingual** — out of scope for this project. Not a gap in the current methodology.
 - **Longer documents** — all cases are short reviews (< 100 words typically, < 300 max). Summary of long-form documents is a different problem with different failure modes; not covered here.
 - **`negative_conflicting_borderline`** — as noted in §5, this case no longer discriminates configs. If it stays easy in the next analysis pass it should be replaced with a harder conflicting-signals case.
@@ -402,7 +402,7 @@ The WS summary decomposed into 6 statements, all faithful. The weak model paraph
 
 1. **CI gating config: Strong/Strong** — 48/48 faithfulness, 18/18 robustness, only the defensible `positive_conflicting_conditional` sentiment miss. The same-family bias is a known risk but does not invalidate the config for the failure modes currently in the dataset. Acceptable as the quality baseline for PR gating.
 
-2. **Cost-reduced CI alternative: Strong/Weak** — 47/48 faithfulness, 18/18 robustness, same sentiment accuracy as SS. Trades 1 of the 4 calibration cases and introduces adversarial faithfulness instability, but keeps summarizer quality high. Acceptable if API budget matters more than the Sonnet judge's calibration catches on the three new unfaithful-magnitude cases. **Not acceptable as the only CI config** because it misses `judge_unfaithful_scope_condition` 3/3.
+2. **Cost-reduced CI alternative: Strong/Weak** — 47/48 faithfulness, 18/18 robustness, same sentiment accuracy as SS. Trades 1 of the 4 calibration cases and introduces adversarial faithfulness instability, but keeps summarizer quality high. Acceptable if API budget matters more than the Sonnet judge's calibration catches on the three unfaithful-magnitude cases. **Not acceptable as the only CI config** because it misses `judge_unfaithful_scope_condition` 3/3.
 
 3. **Do not use WS or WW for CI gating.** WS surfaces llama3.2's failures honestly but has 34/198 assertion failures per 3-run pass; WW masks them (42/198, with the "masking" inflating pass rates on some cases). Both are suitable as **development loops** where speed and cost matter more than ground-truth quality.
 
