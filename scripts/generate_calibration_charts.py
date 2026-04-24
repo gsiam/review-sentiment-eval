@@ -17,7 +17,6 @@ THRESHOLD = 0.70
 OUT_DIR = Path(__file__).resolve().parent.parent / "docs" / "images"
 
 FAITHFUL_LABELS = ["mag-severity", "mag-precision", "scope-condition", "spec-simplification"]
-FAITHFUL_SCORES = [1.00, 1.00, 1.00, 1.00]
 
 UNFAITHFUL_LABELS = [
     "hallucinated",
@@ -30,16 +29,28 @@ UNFAITHFUL_LABELS = [
     "spec-simplification",
 ]
 
+# Pooled medians across SS+WS (strong judge, 6 runs) and SW+WW (weak judge, 6 runs).
+# Calibration cases use pre-written summaries so the summariser plays no role;
+# pooling eliminates the misleading implication that SS/WS differences are summariser-driven.
+# Ranges are (min, max) for unstable entries (max−min > 0.2), None for stable ones.
 CONFIGS = {
     "strong": {
-        "title": "Strong Judge (claude-sonnet-4-6) — SS medians",
+        "title": "Strong Judge (claude-sonnet-4-6) — pooled median (6 runs)",
         "filename": "calibration_strong_judge.png",
-        "unfaithful_scores": [0.60, 0.00, 0.00, 0.50, 1.00, 1.00, 0.50, 0.50],
+        # spec-simplification: SS [1,1,0.5] + WS [1,0.5,0.5] → sorted [0.5,0.5,0.5,1,1,1] → 0.75
+        "faithful_scores": [1.00, 1.00, 1.00, 0.75],
+        "faithful_ranges": [None, None, None, (0.50, 1.00)],
+        # mag-severity: SS [0,1,1] + WS [0,0,1] → sorted [0,0,0,1,1,1] → 0.50
+        "unfaithful_scores": [0.60, 0.00, 0.00, 0.50, 0.50, 1.00, 0.50, 0.50],
+        "unfaithful_ranges": [None, None, None, None, (0.00, 1.00), None, None, None],
     },
     "weak": {
-        "title": "Weak Judge (ollama/mistral) — SW medians",
+        "title": "Weak Judge (ollama/mistral) — pooled median (6 runs)",
         "filename": "calibration_weak_judge.png",
+        "faithful_scores": [1.00, 1.00, 1.00, 1.00],
+        "faithful_ranges": [None, None, None, None],
         "unfaithful_scores": [0.60, 0.00, 0.00, 0.33, 1.00, 1.00, 1.00, 0.50],
+        "unfaithful_ranges": [None, None, None, None, None, None, None, None],
     },
 }
 
@@ -47,6 +58,7 @@ GREEN = "#4CAF50"
 RED = "#E53935"
 NEUTRAL = "#90A4AE"
 THRESHOLD_COLOR = "#212121"
+RANGE_COLOR = "#F57C00"
 
 
 def _bar_colors(scores: list[float], is_faithful: bool) -> list[str]:
@@ -59,6 +71,7 @@ def _draw_subplot(
     ax: plt.Axes,
     labels: list[str],
     scores: list[float],
+    ranges: list[tuple[float, float] | None],
     is_faithful: bool,
     subtitle: str,
 ) -> None:
@@ -72,6 +85,21 @@ def _draw_subplot(
         ax.axhspan(0, THRESHOLD, alpha=0.08, color="green", zorder=0)
 
     bars = ax.bar(x, scores, color=colors, width=0.55, zorder=3, edgecolor="white", linewidth=0.5)
+
+    # Error bars for all entries: real range for unstable, zero-height cap for stable
+    yerr_lower = [s - r[0] if r else 0.0 for s, r in zip(scores, ranges)]
+    yerr_upper = [r[1] - s if r else 0.0 for s, r in zip(scores, ranges)]
+    ax.errorbar(
+        x,
+        scores,
+        yerr=[yerr_lower, yerr_upper],
+        fmt="none",
+        ecolor=RANGE_COLOR,
+        elinewidth=2,
+        capsize=6,
+        capthick=2,
+        zorder=5,
+    )
 
     ax.axhline(y=THRESHOLD, color=THRESHOLD_COLOR, linestyle="--", linewidth=1.5, zorder=4)
 
@@ -115,7 +143,8 @@ def generate(config_key: str) -> None:
     _draw_subplot(
         ax1,
         FAITHFUL_LABELS,
-        FAITHFUL_SCORES,
+        cfg["faithful_scores"],
+        cfg["faithful_ranges"],
         is_faithful=True,
         subtitle="Faithful cases\n(bars should be above threshold)",
     )
@@ -123,6 +152,7 @@ def generate(config_key: str) -> None:
         ax2,
         UNFAITHFUL_LABELS,
         cfg["unfaithful_scores"],
+        cfg["unfaithful_ranges"],
         is_faithful=False,
         subtitle="Unfaithful cases\n(bars should be below threshold)",
     )
@@ -131,11 +161,12 @@ def generate(config_key: str) -> None:
         mpatches.Patch(color=GREEN, label="Correct judge behaviour"),
         mpatches.Patch(color=RED, label="Judge miss"),
         plt.Line2D([0], [0], color=THRESHOLD_COLOR, linestyle="--", linewidth=1.5, label="Threshold (0.70)"),
+        plt.Line2D([0], [0], color=RANGE_COLOR, linewidth=2, label="Min–max range (unstable)"),
     ]
     fig.legend(
         handles=legend_handles,
         loc="lower center",
-        ncol=3,
+        ncol=4,
         bbox_to_anchor=(0.5, -0.06),
         fontsize=9,
         frameon=False,

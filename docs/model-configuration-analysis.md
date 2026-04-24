@@ -68,7 +68,7 @@ Median [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries mar
 - **SS (48/48)** — lowest median is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; all other medians ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see §7.7).
 - **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (median 1.00). `negative_sarcasm` has a 0.75 median, above threshold.
 - **WS** — `negative_sarcasm` collapses to 0.00 in all 3 runs. llama3.2 strips the sarcasm and writes a literal "customer loves it" summary, which Sonnet correctly scores as unfaithful to the actually-negative source. This is a summarizer failure surfaced through the judge.
-- **WW** — `positive_negation_double` (0.67) is the lone threshold failure; Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral fails to catch the same llama3.2 hallucination that Sonnet flagged — a false positive on faithfulness driven by weak-judge leniency.
+- **WW** — `positive_negation_double` (0.67) is the lone threshold failure; Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral fails to catch the same llama3.2 hallucination that Sonnet flagged — a false negative driven by weak-judge leniency.
 
 ![§2a Normal-case faithfulness heatmap](images/heatmap_normal_faithfulness.png)
 
@@ -164,7 +164,7 @@ Both families of outputs are defensible, but the dataset treats `positive` as gr
 | `judge_unfaithful_magnitude_precision` | FAIL | 0/3 | 0/3 | 0/3 | 0/3 | **Universal miss** |
 | `judge_unfaithful_magnitude_severity` | FAIL | 1/3 | 0/3 | 2/3 | 0/3 | Sonnet judge unstable; Mistral judge misses |
 | `judge_unfaithful_scope_condition` | FAIL | 3/3 | 0/3 | 3/3 | 0/3 | Clean judge split: Sonnet catches, Mistral doesn't |
-| `judge_faithful_spec_simplification` | PASS | 2/3 | 3/3 | 1/3 | 3/3 | Sonnet judge *false-positive-flags* the summary |
+| `judge_faithful_spec_simplification` | PASS | 2/3 | 3/3 | 1/3 | 3/3 | Sonnet judge: sporadic false positive on faithful summary |
 
 **`judge_unfaithful_magnitude_precision`** fails in every config, every run. The source says the blender "pulverizes frozen fruit and ice into a perfectly smooth puree in under 10 seconds"; the unfaithful summary softens this to "quickly blends frozen fruit and ice into a smooth puree". Both judges decompose "quickly blends" as a fuzzy generalization of "under 10 seconds" and rule it consistent with the source. Neither model is sensitive to **precision loss** as a faithfulness failure when the softer claim is not strictly false — Ragas's statement-level decomposition doesn't capture "loss of quantitative detail" as a violation.
 
@@ -204,50 +204,56 @@ Failed *observations* (test × run) per config, summed across all assertion type
 
 ## 4. Threshold Validation
 
-Judge calibration cases use pre-written summaries (no summarizer involved), so scores reflect judge behaviour only. WS vs SS and WW vs SW compare identical summary+source pairs against the same judge — the small differences between SS/WS and SW/WW on calibration cases are pure judge non-determinism across the 3 runs.
+Judge calibration cases use pre-written summaries (no summariser involved), so scores reflect judge behaviour only. Scores are pooled into a single 6-run median per judge. Ranges shown only for unstable entries (`*` = max−min across all 6 runs > 0.2).
 
-### Strong judge (claude-sonnet-4-6) — SS + WS columns
+**False positive**: on a given run, the judge scores a faithful summary below the 0.70 threshold (PASS case).
 
-| Case | Expected | SS median [min–max] | WS median [min–max] | Verdict |
-|---|---|---|---|---|
-| judge_faithful_magnitude_severity | PASS | 1.00 [1.00–1.00] | 1.00 [1.00–1.00] | ✓ |
-| judge_faithful_magnitude_precision | PASS | 1.00 [1.00–1.00] | 1.00 [1.00–1.00] | ✓ |
-| judge_faithful_scope_condition | PASS | 1.00 [1.00–1.00] | 1.00 [1.00–1.00] | ✓ |
-| judge_faithful_spec_simplification | PASS | 1.00 [0.50–1.00]* | 0.50 [0.50–1.00]* | ✗ false-flag risk (see §3.3) |
-| judge_unfaithful_hallucinated | FAIL | 0.60 [0.60–0.60] | 0.60 [0.60–0.60] | ✓ |
-| judge_unfaithful_negation_flip | FAIL | 0.00 [0.00–0.00] | 0.00 [0.00–0.00] | ✓ |
-| judge_unfaithful_attribution_swap | FAIL | 0.00 [0.00–0.00] | 0.00 [0.00–0.00] | ✓ |
-| judge_unfaithful_number_swap | FAIL | 0.50 [0.50–0.60] | 0.50 [0.50–0.60] | ✓ |
-| judge_unfaithful_magnitude_severity | FAIL | 1.00 [0.00–1.00]* | 0.00 [0.00–1.00]* | ✗ unstable |
-| judge_unfaithful_magnitude_precision | FAIL | 1.00 [1.00–1.00] | 1.00 [1.00–1.00] | ✗ universal miss |
-| judge_unfaithful_scope_condition | FAIL | 0.50 [0.50–0.50] | 0.50 [0.50–0.50] | ✓ |
-| judge_unfaithful_spec_simplification | FAIL | 0.50 [0.50–0.50] | 0.50 [0.50–0.50] | ✓ (borderline) |
+**False negative**: on a given run, the judge scores an unfaithful summary at or above 0.70 (FAIL case).
 
-- Faithful cluster median: **1.00** (one case dips to 0.50 unstable)
-- Unfaithful cluster max among stable cases (excluding `magnitude_precision` universal miss and `magnitude_severity` instability): **0.60** → 0.10 gap below threshold
-- Including `magnitude_severity`, the SS median is **1.00 [0.00–1.00]*** (judge instability crosses the threshold on individual runs)
-- Including `magnitude_precision`: **1.00** → universal miss, crosses threshold on every run
+**Verdict key**: ✓ means the median score is correct and the case is stable across all 6 runs. ✗ marks two distinct outcomes: a **universal miss** (the judge gets the case wrong in every run — no correct scores at all); or a **run-level instability** (median is on the correct side on average but individual runs vary, labelled "unstable"). Unstable entries are always accompanied by a range.
 
-### Weak judge (ollama/mistral) — SW + WW columns
+### Strong judge (claude-sonnet-4-6)
 
-| Case | Expected | SW median [min–max] | WW median [min–max] | Verdict |
-|---|---|---|---|---|
-| judge_faithful_magnitude_severity | PASS | 1.00 | 1.00 | ✓ |
-| judge_faithful_magnitude_precision | PASS | 1.00 | 1.00 | ✓ |
-| judge_faithful_scope_condition | PASS | 1.00 | 1.00 | ✓ |
-| judge_faithful_spec_simplification | PASS | 1.00 | 1.00 | ✓ |
-| judge_unfaithful_hallucinated | FAIL | 0.60 | 0.60 | ✓ |
-| judge_unfaithful_negation_flip | FAIL | 0.00 | 0.00 | ✓ |
-| judge_unfaithful_attribution_swap | FAIL | 0.00 | 0.00 | ✓ |
-| judge_unfaithful_number_swap | FAIL | 0.33 | 0.33 | ✓ |
-| judge_unfaithful_magnitude_severity | FAIL | 1.00 | 1.00 | ✗ universal miss |
-| judge_unfaithful_magnitude_precision | FAIL | 1.00 | 1.00 | ✗ universal miss |
-| judge_unfaithful_scope_condition | FAIL | 1.00 | 1.00 | ✗ universal miss |
-| judge_unfaithful_spec_simplification | FAIL | 0.50 | 0.50 | ✓ (borderline) |
+| Case | Expected | Median (6 runs) | Verdict |
+|---|---|---|---|
+| judge_faithful_magnitude_severity | PASS | 1.00 | ✓ |
+| judge_faithful_magnitude_precision | PASS | 1.00 | ✓ |
+| judge_faithful_scope_condition | PASS | 1.00 | ✓ |
+| judge_faithful_spec_simplification | PASS | 0.75 [0.50–1.00]* | ✗ unstable (run-level false positives, see §3.3) |
+| judge_unfaithful_hallucinated | FAIL | 0.60 | ✓ |
+| judge_unfaithful_negation_flip | FAIL | 0.00 | ✓ |
+| judge_unfaithful_attribution_swap | FAIL | 0.00 | ✓ |
+| judge_unfaithful_number_swap | FAIL | 0.50 | ✓ |
+| judge_unfaithful_magnitude_severity | FAIL | 0.50 [0.00–1.00]* | ✗ unstable (run-level false negatives) |
+| judge_unfaithful_magnitude_precision | FAIL | 1.00 | ✗ universal miss |
+| judge_unfaithful_scope_condition | FAIL | 0.50 | ✓ |
+| judge_unfaithful_spec_simplification | FAIL | 0.50 | ✓ |
 
-- Faithful cluster median: **1.00** (fully stable — no false-flagging)
-- Unfaithful cluster max (excluding misses): **0.60**
-- Unfaithful cluster including misses: **1.00** → **three universal misses**
+- Faithful cases: 3 of 4 at **1.00** (stable); `spec_simplification` unreliable — 0.75 pooled median, 3 of 6 runs a false positive
+- Unfaithful cases (stable): max **0.60** → 0.10 gap below threshold
+- One universal miss: `magnitude_precision` (1.00 across all 6 runs)
+- `magnitude_severity`: unreliable — scores 0.00 and 1.00 equally across 6 runs (pooled median 0.50)
+
+### Weak judge (ollama/mistral)
+
+| Case | Expected | Median (6 runs) | Verdict |
+|---|---|---|---|
+| judge_faithful_magnitude_severity | PASS | 1.00 | ✓ |
+| judge_faithful_magnitude_precision | PASS | 1.00 | ✓ |
+| judge_faithful_scope_condition | PASS | 1.00 | ✓ |
+| judge_faithful_spec_simplification | PASS | 1.00 | ✓ |
+| judge_unfaithful_hallucinated | FAIL | 0.60 | ✓ |
+| judge_unfaithful_negation_flip | FAIL | 0.00 | ✓ |
+| judge_unfaithful_attribution_swap | FAIL | 0.00 | ✓ |
+| judge_unfaithful_number_swap | FAIL | 0.33 | ✓ |
+| judge_unfaithful_magnitude_severity | FAIL | 1.00 | ✗ universal miss |
+| judge_unfaithful_magnitude_precision | FAIL | 1.00 | ✗ universal miss |
+| judge_unfaithful_scope_condition | FAIL | 1.00 | ✗ universal miss |
+| judge_unfaithful_spec_simplification | FAIL | 0.50 | ✓ |
+
+- Faithful cases: all at **1.00** (fully stable — no false positives)
+- Unfaithful cases (stable): max **0.60**
+- Unfaithful cases including misses: **1.00** → **three universal misses**
 
 ### Score Distribution vs Threshold
 
@@ -255,18 +261,18 @@ See Figs. 4a–b for score distributions across faithful and unfaithful calibrat
 
 ![Strong judge calibration scores](images/calibration_strong_judge.png)
 
-*Fig. 4a. Strong judge (claude-sonnet-4-6). Left: faithful cases (bars should be above 0.70). Right: unfaithful cases (bars should be below 0.70). Green = correct behaviour; red = miss.*
+*Fig. 4a. Strong judge (claude-sonnet-4-6), pooled median (6 runs). Left: faithful cases (bars should be above 0.70). Right: unfaithful cases (bars should be below 0.70). Green = correct behaviour; red = miss.*
 
 ![Weak judge calibration scores](images/calibration_weak_judge.png)
 
-*Fig. 4b. Weak judge (ollama/mistral). Same layout as Fig. 4a.*
+*Fig. 4b. Weak judge (ollama/mistral), pooled median (6 runs). Same layout as Fig. 4a.*
 
 ### Assessment
 
-- The **classic-error cases** (hallucinated, negation_flip, attribution_swap, number_swap) are still cleanly separated from the faithful cluster for both judges (0.60 max vs 1.00 min), and 0.70 is still a valid threshold for these error types.
-- The **precision-loss cases** (magnitude/scope/spec) expose a fundamental Ragas limitation: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim is not literally false. Both judges miss `magnitude_precision`. Sonnet also misses `magnitude_severity` unstably (SS: [0.00, 1.00, 1.00], median 1.00 flagged unstable) — so the strong judge has 2 misses in total. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses.
-- **Sonnet judge's `spec_simplification` false-flag** is the opposite failure mode: Sonnet treats a correct terminology expansion ("DSE" → "dirty screen effect") as unsupported inference in 3 of 6 Sonnet-judged runs (SS 1/3, WS 2/3). Mistral doesn't, because its domain knowledge is shallower.
-- The threshold itself does not need adjustment — raising it wouldn't help catch precision-loss errors, because those score 1.00 not just 0.71. The fix is a **different metric**, not a different threshold (see §§7.6–7.7).
+- The **classic-error unfaithful cases** (hallucinated, negation_flip, attribution_swap, number_swap) are cleanly separated from the faithful calibration cases for both judges — unfaithful scores top out at 0.60, faithful scores bottom out at 0.75 — and 0.70 sits inside that gap.
+- The **precision-loss cases** (magnitude/scope/spec) expose a fundamental Ragas limitation: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim remains factually true. Both judges miss `magnitude_precision` on the unfaithful side, scoring 1.00 when they should score below threshold. Sonnet is also unreliable on `magnitude_severity` (unfaithful) — scoring 0.00 and 1.00 equally across 6 runs (pooled median 0.50); it gets it right on average but cannot be trusted. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses on unfaithful cases.
+- **Sonnet judge's `spec_simplification` false positive** is the opposite failure mode: Sonnet treats a correct terminology expansion ("DSE" → "dirty screen effect") in a faithful summary as unsupported inference in 3 of 6 Sonnet-judged runs. Mistral doesn't, because its domain knowledge is shallower.
+- The threshold itself does not need adjustment. For precision-loss universal misses (bullet 2), the scores are 1.00 — raising the threshold cannot reach them; the fix is a **different metric** (see §§7.6–7.7). For `spec_simplification` false positives (bullet 3), lowering the threshold would not reliably help either: the judge scores the same faithful summary 0.50 in some runs and 1.00 in others, and lowering below 0.60 would introduce false negatives on `hallucinated`. The problem is judge non-determinism, not threshold placement.
 
 ---
 
@@ -305,7 +311,7 @@ The "borderline" label is now earned rather than aspirational: the case tests th
 
 **SS** is the quality ceiling and the correct default for CI gating. It has zero faithfulness or robustness failures across 3 runs and its only sentiment failure is the defensible `positive_conflicting_conditional` disagreement. The same-family bias risk is real but not refuted by this data.
 
-**SW** pays API cost for summarization but offloads scoring to local Mistral. It matches SS on sentiment and conflicting accuracy, but introduces adversarial faithfulness failures (driven by Mistral scoring short adversarial outputs erratically) and is calibrated worse than SS on the precision-loss cases: SW misses `judge_unfaithful_scope_condition` 3/3 (vs SS 3/3 catches) and `judge_unfaithful_magnitude_severity` 0/3 (vs SS 1/3), partly offset by never false-flagging `judge_faithful_spec_simplification` (SW 3/3 correct vs SS 2/3). It trades some evaluation quality for privacy on the judge side.
+**SW** pays API cost for summarization but offloads scoring to local Mistral. It matches SS on sentiment and conflicting accuracy, but introduces adversarial faithfulness failures (driven by Mistral scoring short adversarial outputs erratically) and is calibrated worse than SS on the precision-loss cases: SW misses `judge_unfaithful_scope_condition` 3/3 (vs SS 3/3 catches) and `judge_unfaithful_magnitude_severity` 0/3 (vs SS 1/3), partly offset by never producing a false positive on `judge_faithful_spec_simplification` (SW 3/3 correct vs SS 2/3). It trades some evaluation quality for privacy on the judge side.
 
 **WS** is summarizer-bound: llama3.2's sarcasm blindness, conflicting-signal collapse, and two injection failures account for most of its failures. Using Sonnet as the judge surfaces these faithfully. Useful as a **capability stress test for weak summarizers**, not as a CI config.
 
@@ -345,7 +351,7 @@ Across 12 runs, 10 (case × config) entries are flagged as unstable (max−min >
 | adversarial_system_override | SW | 0.67–1.00 | Same |
 | judge_unfaithful_magnitude_severity | SS | 0.00–1.00 | Sonnet judge flips on severity softening |
 | judge_unfaithful_magnitude_severity | WS | 0.00–1.00 | Same — judge-driven |
-| judge_faithful_spec_simplification | SS | 0.50–1.00 | Sonnet judge sporadic false-flag on "DSE" expansion |
+| judge_faithful_spec_simplification | SS | 0.50–1.00 | Sonnet judge sporadic false positive on "DSE" expansion |
 | judge_faithful_spec_simplification | WS | 0.50–1.00 | Same — judge-driven |
 
 Nine of the 10 instabilities fall cleanly into two buckets: a Mistral judge on short/adversarial outputs, or a Sonnet judge on the precision-loss calibration cases. The one exception is `positive_negation_double` under WS — a Sonnet judge on a normal negation case, flipping between 1.00 and 0.67 as it parses litotes inconsistently. WS vs SS on `judge_unfaithful_magnitude_severity` is particularly striking: identical summary + source + judge, different runs produce 0.00 vs 1.00. A single-run analysis of this case could have told any story.
