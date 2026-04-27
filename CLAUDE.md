@@ -59,6 +59,10 @@ Refer to `.standards/general/`, `.standards/python/`,
 - `reports/aggregated.json` is the canonical data backing `docs/model-configuration-analysis.md`. It is tracked in git. Do not read it directly — run `scripts/model_doc_audit.py` instead to surface specific numbers without flooding the context window.
 - Run logs (`reports/*.log`, `reports/archive/`) are gitignored — large and already distilled into `aggregated.json`.
 
+### Run Strategy for Config Analysis
+
+Each model configuration gets **3 fresh runs** on the full dataset. Report scores as `median [min–max]` per case. Flag any case where max−min > 0.2 as unstable (called out in methodology risks). Label logs distinctively (e.g. `reports/strong-strong-run1.log`). Single-run logs from before this convention are excluded from analysis tables.
+
 ### Project-Specific
 
 - Python 3.10+
