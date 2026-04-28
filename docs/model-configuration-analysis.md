@@ -310,7 +310,7 @@ In the strong/strong configuration, both roles run `claude-sonnet-4-6`. Shared t
 
 The current data does not directly refute this for SS, because SS passes the 0.70 threshold on every normal and adversarial case. But the Sonnet judge does flag Sonnet summaries at the edge more often than a "correlated blind spot" story would predict: SS medians below 1.00 include `negative_baseline` 0.88, `negative_conflicting_borderline` 0.90, `positive_conflicting_override` 0.89, `negative_timeline_shipping` 0.71, `negative_sarcasm` 0.71, `adversarial_xml_injection` 0.86, and `adversarial_quoted_instruction` 0.71 — seven sub-1.00 scores, three of them at 0.71 (one tick above the 0.70 threshold). WS — same judge, different summarizer — surfaces llama3.2 hallucinations cleanly (`negative_sarcasm` 0.00), so the Sonnet judge is not lenient in general. The correlated-bias risk is real in principle but the circumstantial case is weaker than a "two borderline scores" framing would suggest.
 
-**Mitigation**: include at least one cross-family pairing where the judge comes from a different provider (GPT-4, Gemini) evaluating Claude summaries. This isn't in the current dataset.
+**Mitigation**: include at least one cross-family pairing where the judge comes from a different provider (an OpenAI or Gemini model) evaluating Claude summaries. This isn't in the current dataset.
 
 ### 6.2 Case designer bias
 
