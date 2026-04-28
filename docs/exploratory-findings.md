@@ -10,7 +10,7 @@ This document captures those observations. Each finding is a hypothesis, not a p
 
 ## Scope and Relation to the Configuration Analysis
 
-The [configuration analysis](model-configuration-analysis.md) holds the summarizer prompt and judge prompt fixed and varies the model backends. The findings in this document propose changes to the summarizer prompt, to be tested later with models held fixed. A cross-cutting synthesis section also draws a connection to a judge prompt hypothesis in §7.3 of the configuration analysis. The two analyses are complementary:
+The [configuration analysis](model-configuration-analysis.md) holds the summarizer prompt and judge prompt fixed and varies the model backends. The findings in this document propose changes to the summarizer prompt, to be tested later with models held fixed. A cross-cutting synthesis section also draws a connection to a judge prompt hypothesis in §6.3 of the configuration analysis. The two analyses are complementary:
 
 - **Configuration analysis** — *"which models should I use, and under what threshold?"*
 - **Exploratory findings (this document)** — *"what should the summarizer prompt say for the next iteration?"*
@@ -34,7 +34,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 > Do not introduce numeric ranges, durations, or directional framings that are not explicitly stated in the source. When the source gives a specific date, do not convert it to a duration. When the source states a fact, do not add qualifiers that imply trend or continuation.
 
-**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See §7.7 of the configuration analysis for a full mechanism discussion.
+**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See §6.7 of the configuration analysis for a full mechanism discussion.
 
 ### 2. Weak summarizer strips sarcasm and emits literal positive
 
@@ -101,7 +101,7 @@ The strong summarizer resists both. The weak summarizer executes both. The WW co
 
 Across the findings, an asymmetry emerges in what kind of prompt change is appropriate. When the failure mode is **excess** — the model over-infers, over-derives, or executes instructions it should ignore — the intervention is a **constraint**: a specific restriction that bounds what the model is permitted to do (Findings 1 and 4). When the failure mode is **deficit** — the model misses a pattern, interprets literally, or fails to apply a tie-breaker — the intervention is **guidance**: an explicit rule that steers behaviour the model would otherwise omit (Findings 2, 3, and 5).
 
-This maps loosely onto model tier. Strong models tend to fail through excess: their capacity to reason and infer means they can generalise vague guidance in unexpected directions. A vague instruction to "be careful about unsupported claims" risks worsening over-derivation rather than curing it. A narrow constraint that says exactly what is off-limits is safer precisely because it is dumb — it leaves no room for the model to interpret the spirit of the rule and overshoot. Weak models tend to fail through deficit and benefit from guidance because their under-capability provides its own bound on how far things can go wrong; they follow the rule narrowly rather than generalising it.
+This maps loosely onto model tier. Strong models tend to fail through excess: their capacity to reason and infer means they can generalise vague guidance in unexpected directions. A vague instruction to "be careful about unsupported claims" risks worsening over-derivation rather than curing it. A narrow constraint that says exactly what is off-limits is safer precisely because it is rigid — it leaves no room for the model to interpret the spirit of the rule and overshoot. Weak models tend to fail through deficit and benefit from guidance because their under-capability provides its own bound on how far things can go wrong; they follow the rule narrowly rather than generalising it.
 
 The mapping is not perfect — Finding 4 shows that weak models can also fail through excess (following embedded instructions they should treat as content), and the remedy there is also a constraint. The cleaner frame is failure mode, not model tier.
 
