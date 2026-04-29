@@ -26,6 +26,8 @@ cp .env.example .env
 
 # Lint
 ruff check src/ tests/
+npx markdownlint-cli docs/
+lychee --include-fragments --root-dir . README.md CLAUDE.md 'docs/**/*.md'  # brew install lychee
 
 # Tests
 pytest -m unit              # Unit tests only (fast, no API)

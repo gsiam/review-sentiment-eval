@@ -27,6 +27,21 @@ two structurally distinct outcomes (e.g., universal miss vs run-level instabilit
 the preamble must include a key that distinguishes them. Relying on context to
 disambiguate produces tables that appear consistent but are not.
 
+## Cross-References and Links
+
+**Link on first mention, plain text after** — when the same section or document
+is referenced more than once in close proximity (same paragraph or adjacent
+sentences), hyperlink only the first occurrence. Repeat links add visual noise
+without helping the reader navigate.
+
+**Check links after renaming a heading** — renaming a heading silently breaks
+every anchor that points to it. Before committing, grep `docs/` for the old
+anchor slug and update all occurrences. Then run the link checker to confirm:
+
+```bash
+lychee --include-fragments --root-dir . README.md CLAUDE.md 'docs/**/*.md'
+```
+
 ## External-Reader Documents
 
 **Frame before presenting** — introductory sections carry more weight than they
