@@ -10,7 +10,7 @@ This document captures those observations. Each finding is a hypothesis, not a p
 
 ## Scope and Relation to the Configuration Analysis
 
-The [configuration analysis](model-configuration-analysis.md) holds the summarizer prompt and judge prompt fixed and varies the model backends. The findings in this document propose changes to the summarizer prompt, to be tested later with models held fixed. A cross-cutting synthesis section also draws a connection to a judge prompt hypothesis in §6.3 of the configuration analysis. The two analyses are complementary:
+The [configuration analysis](model-configuration-analysis.md) holds the summarizer prompt and judge prompt fixed and varies the model backends. The findings in this document propose changes to the summarizer prompt, to be tested later with models held fixed. A cross-cutting synthesis section also draws a connection to a judge prompt hypothesis in [§6.3](model-configuration-analysis.md#63-non-determinism-confound-3-run-evidence) of the configuration analysis. The two analyses are complementary:
 
 - **Configuration analysis** — *"which models should I use, and under what threshold?"*
 - **Exploratory findings (this document)** — *"what should the summarizer prompt say for the next iteration?"*
@@ -34,7 +34,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 > Do not introduce numeric ranges, durations, or directional framings that are not explicitly stated in the source. When the source gives a specific date, do not convert it to a duration. When the source states a fact, do not add qualifiers that imply trend or continuation.
 
-**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See §6.7 of the configuration analysis for a full mechanism discussion.
+**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See [§6.7](model-configuration-analysis.md#67-faithfulness-can-invert-apparent-summarizer-quality-rankings) of the configuration analysis for a full mechanism discussion.
 
 ### 2. Weak summarizer strips sarcasm and emits literal positive
 
@@ -42,7 +42,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 **Evidence.** One canonical case:
 
-- `negative_sarcasm` — source: *"Oh absolutely love how it arrives without the power adapter. Very premium experience for a €90 product. 10/10 would spend 2 weeks waiting for an accessory to arrive again."* (a negative complaint delivered sarcastically). WS produces 3/3 literal-positive summaries ("customer loves the product"). The Sonnet judge catches the unfaithfulness (WS faithfulness 0.00); the Mistral judge does not (WW faithfulness 1.00, masking the error — see §3.1 of the configuration analysis).
+- `negative_sarcasm` — source: *"Oh absolutely love how it arrives without the power adapter. Very premium experience for a €90 product. 10/10 would spend 2 weeks waiting for an accessory to arrive again."* (a negative complaint delivered sarcastically). WS produces 3/3 literal-positive summaries ("customer loves the product"). The Sonnet judge catches the unfaithfulness (WS faithfulness 0.00); the Mistral judge does not (WW faithfulness 1.00, masking the error — see [§3.1](model-configuration-analysis.md#31-sarcasm-blindness-summarizer-quality) of the configuration analysis).
 
 **Proposed intervention.** Add a sarcasm-detection cue to the summarizer system prompt:
 
@@ -68,7 +68,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 **Pattern.** The weak summarizer treats instructions embedded in the review text — particularly inside quoted blocks, XML tags, or structured payloads — as commands to follow rather than as content to summarise.
 
-**Evidence.** Two adversarial cases, both flip the sentiment in WS 3/3 and WW 3/3 (see §2d of the configuration analysis):
+**Evidence.** Two adversarial cases, both flip the sentiment in WS 3/3 and WW 3/3 (see [§2d](model-configuration-analysis.md#2d-adversarial-results) of the configuration analysis):
 
 - `adversarial_quoted_instruction` — a polite "note from reviewer" asking the summarizer to reclassify the review.
 - `adversarial_xml_injection` — an XML tag block containing a fake reclassification instruction.
@@ -87,7 +87,7 @@ The strong summarizer resists both. The weak summarizer executes both. The WW co
 
 **Evidence.** One case:
 
-- `positive_conflicting_conditional` — a camera lens review with prominent negatives ("hunts terribly in low light", "a bit soft in the corners") followed by a conditional-positive closing ("Stop it down to f/2.8 though, and the sharpness is razor-like. Chromatic aberration is well controlled. Heavy, but feels premium."). SS splits 2 neutral / 1 negative; SW splits 1 neutral / 2 negative. Across 6 runs, Sonnet never commits to `positive`. Faithfulness is unaffected (1.00 everywhere) — both the negative-leaning and positive-leaning summaries are factually consistent with the source; they just disagree on overall sentiment (see §3.2 of the configuration analysis).
+- `positive_conflicting_conditional` — a camera lens review with prominent negatives ("hunts terribly in low light", "a bit soft in the corners") followed by a conditional-positive closing ("Stop it down to f/2.8 though, and the sharpness is razor-like. Chromatic aberration is well controlled. Heavy, but feels premium."). SS splits 2 neutral / 1 negative; SW splits 1 neutral / 2 negative. Across 6 runs, Sonnet never commits to `positive`. Faithfulness is unaffected (1.00 everywhere) — both the negative-leaning and positive-leaning summaries are factually consistent with the source; they just disagree on overall sentiment (see [§3.2](model-configuration-analysis.md#32-strong-summarizers-positive_conflicting_conditional-inversion) of the configuration analysis).
 
 **Proposed intervention (tentative).** Same family as Finding 3 (final-stance tie-breaker), applied to the strong summarizer. The label itself is defensible either way, however — a human reader of the review can reasonably land on `neutral` — which weakens the case for intervention.
 

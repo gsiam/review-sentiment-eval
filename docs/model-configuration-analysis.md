@@ -65,7 +65,7 @@ Median [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries mar
 
 **Notable:**
 
-- **SS (48/48)** — lowest median is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; all other medians ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see §6.7).
+- **SS (48/48)** — lowest median is 0.71 on `negative_sarcasm` and `negative_timeline_shipping`; all other medians ≥0.88. Zero failures across 3 runs. Notably, WS scores 1.00 on both of these cases under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see [§6.7](#67-faithfulness-can-invert-apparent-summarizer-quality-rankings)).
 - **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (median 1.00). `negative_sarcasm` has a 0.75 median, above threshold.
 - **WS** — `negative_sarcasm` collapses to 0.00 in all 3 runs. llama3.2 strips the sarcasm and writes a literal "customer loves it" summary, which Sonnet correctly scores as unfaithful to the actually-negative source. This is a summarizer failure surfaced through the judge.
 - **WW** — `positive_negation_double` (0.67) is the lone threshold failure; Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral fails to catch the same llama3.2 hallucination that Sonnet flagged — a false negative driven by weak-judge leniency.
@@ -219,7 +219,7 @@ Judge calibration cases use pre-written summaries (no summariser involved), so s
 | judge_faithful_magnitude_severity | PASS | 1.00 | ✓ |
 | judge_faithful_magnitude_precision | PASS | 1.00 | ✓ |
 | judge_faithful_scope_condition | PASS | 1.00 | ✓ |
-| judge_faithful_spec_simplification | PASS | 0.75 [0.50–1.00]* | ✗ unstable (run-level false positives, see §3.3) |
+| judge_faithful_spec_simplification | PASS | 0.75 [0.50–1.00]* | ✗ unstable (run-level false positives, see [§3.3](#33-judge-calibration-failures)) |
 | judge_unfaithful_hallucinated | FAIL | 0.60 | ✓ |
 | judge_unfaithful_negation_flip | FAIL | 0.00 | ✓ |
 | judge_unfaithful_attribution_swap | FAIL | 0.00 | ✓ |
@@ -272,7 +272,7 @@ See Figs. 4a–b for score distributions across faithful and unfaithful calibrat
 - The **classic-error unfaithful cases** (hallucinated, negation_flip, attribution_swap, number_swap) are cleanly separated from the faithful calibration cases for both judges — unfaithful scores top out at 0.60, faithful scores bottom out at 0.75 — and 0.70 sits inside that gap.
 - The **precision-loss cases** (magnitude/scope/spec) expose a fundamental limitation of the faithfulness metric: statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim remains factually true. Both judges miss `magnitude_precision` on the unfaithful side, scoring 1.00 when they should score below threshold. Sonnet is also unreliable on `magnitude_severity` (unfaithful) — scoring 0.00 and 1.00 equally across 6 runs (pooled median 0.50); it gets it right on average but cannot be trusted. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses on unfaithful cases.
 - **Sonnet judge's `spec_simplification` false positive** is the opposite failure mode: Sonnet treats a correct terminology expansion ("DSE" → "dirty screen effect") in a faithful summary as unsupported inference in 3 of 6 Sonnet-judged runs. Mistral doesn't, because its domain knowledge is shallower.
-- The threshold itself does not need adjustment. For precision-loss universal misses (bullet 2), the scores are 1.00 — raising the threshold cannot reach them; the fix is a **different metric** (see §§6.6–6.7). For `spec_simplification` false positives (bullet 3), lowering the threshold would not reliably help either: the judge scores the same faithful summary 0.50 in some runs and 1.00 in others, and lowering below 0.60 would introduce false negatives on `hallucinated`. The problem is judge non-determinism, not threshold placement.
+- The threshold itself does not need adjustment. For precision-loss universal misses (bullet 2), the scores are 1.00 — raising the threshold cannot reach them; the fix is a **different metric** (see [§6.6](#66-faithfulness-misses-precision-loss-and-under-specification)–[§6.7](#67-faithfulness-can-invert-apparent-summarizer-quality-rankings)). For `spec_simplification` false positives (bullet 3), lowering the threshold would not reliably help either: the judge scores the same faithful summary 0.50 in some runs and 1.00 in others, and lowering below 0.60 would introduce false negatives on `hallucinated`. The problem is judge non-determinism, not threshold placement.
 
 ---
 
@@ -318,7 +318,7 @@ A parallel risk applies at dataset design. A model that shares training data and
 
 This dataset was drafted with Sonnet and Opus, plus a cross-family seeding pass via Gemini 3 Pro Preview prompted to extract challenging examples from published review-summarization benchmarks (FIB, USB, aspect-guided summarization datasets). The Gemini step is the actual cross-family mitigation — cases anchored to external benchmark examples are less likely to inherit Claude-family blind spots than cases drafted end-to-end in-family. Every case was then reviewed and edited by hand before inclusion.
 
-**Mitigation** (applied): cross-family seeding plus human review. Residual risk is lower than pure single-family drafting but non-zero — human review reliably catches labeling errors and broken cases, but is structurally poor at negative-space judgments ("this case fails to probe a shared blind spot"). The larger remaining cross-family gap is the **judge** role, where no human filter sits between the model and the reported score (see §7 and recommendation 6).
+**Mitigation** (applied): cross-family seeding plus human review. Residual risk is lower than pure single-family drafting but non-zero — human review reliably catches labeling errors and broken cases, but is structurally poor at negative-space judgments ("this case fails to probe a shared blind spot"). The larger remaining cross-family gap is the **judge** role, where no human filter sits between the model and the reported score (see [§7](#7-dataset-gaps) and [recommendation 6](#8-recommendations)).
 
 ### 6.3 Non-determinism confound (3-run evidence)
 
@@ -363,7 +363,7 @@ Three calibration misses (`magnitude_precision`, `magnitude_severity`, `scope_co
 
 ### 6.7 Faithfulness can invert apparent summarizer quality rankings
 
-Several normal cases show **WS scoring higher than SS** under the same Sonnet judge — the clearest examples being `negative_timeline_shipping` (SS median 0.71 vs WS 1.00) and `positive_conflicting_override` (SS 0.89 vs WS 1.00). The surface reading — that the weak summarizer produced better output — is misleading. This is the mirror image of §6.6: where §6.6 shows the metric *missing* under-specified claims, here it is *correctly penalising* over-specified ones. The strong model hallucinates; the weak model stays literal.
+Several normal cases show **WS scoring higher than SS** under the same Sonnet judge — the clearest examples being `negative_timeline_shipping` (SS median 0.71 vs WS 1.00) and `positive_conflicting_override` (SS 0.89 vs WS 1.00). The surface reading — that the weak summarizer produced better output — is misleading. This is the mirror image of [§6.6](#66-faithfulness-misses-precision-loss-and-under-specification): where §6.6 shows the metric *missing* under-specified claims, here it is *correctly penalising* over-specified ones. The strong model hallucinates; the weak model stays literal.
 
 The `negative_timeline_shipping` run-1 logs make the mechanism concrete. The source text states: *"Placed the order on March 1st. The estimated delivery was March 5th."* Two SS statements failed:
 
@@ -376,14 +376,14 @@ The WS summary decomposed into 6 statements, all faithful. The weak model paraph
 
 **This creates structural pressure toward conservative, minimal output.** A system optimising for faithfulness score alone could theoretically maximise it by producing shorter summaries with fewer claims — each one trivially traceable to the source. That is not a useful summariser. It means faithfulness rankings can *invert* perceived quality rankings, and the inversion grows stronger as the summariser becomes more capable and more willing to synthesise.
 
-**Mitigation**: pair faithfulness with a **recall or coverage-style counterpart** — a metric that asks whether the summary represents the key claims in the source, not just whether its own claims are supported (e.g., Ragas `answer_recall`, or a custom check that scores how many source-side claims appear in the summary). Without it, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal" (see also §4).
+**Mitigation**: pair faithfulness with a **recall or coverage-style counterpart** — a metric that asks whether the summary represents the key claims in the source, not just whether its own claims are supported (e.g., Ragas `answer_recall`, or a custom check that scores how many source-side claims appear in the summary). Without it, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal" (see also [§4](#4-threshold-validation)).
 
 ---
 
 ## 7. Dataset Gaps
 
-- **Cross-family evaluator gap** — no configuration uses a non-Anthropic / non-Ollama strong judge. The dataset design stage was partially cross-family (Gemini 3 Pro Preview seeding, see §6.2), but the judge role is still entirely in-family for SS. An OpenAI or Gemini model as judge would meaningfully reduce same-family bias risk for the SS config.
-- **Calibration cases cover two distinct failure modes** — the precision-loss cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surface 3 universal judge misses that the classic-error cases (hallucinated, negation_flip, attribution_swap, number_swap) do not. The two groups are not interchangeable (see §6.6).
+- **Cross-family evaluator gap** — no configuration uses a non-Anthropic / non-Ollama strong judge. The dataset design stage was partially cross-family (Gemini 3 Pro Preview seeding, see [§6.2](#62-case-designer-bias)), but the judge role is still entirely in-family for SS. An OpenAI or Gemini model as judge would meaningfully reduce same-family bias risk for the SS config.
+- **Calibration cases cover two distinct failure modes** — the precision-loss cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surface 3 universal judge misses that the classic-error cases (hallucinated, negation_flip, attribution_swap, number_swap) do not. The two groups are not interchangeable (see [§6.6](#66-faithfulness-misses-precision-loss-and-under-specification)).
 - **Multilingual** — out of scope for this project. Not a gap in the current methodology.
 - **Longer documents** — all cases are short reviews (< 100 words typically, < 300 max). Summary of long-form documents is a different problem with different failure modes; not covered here.
 - **Single-judgment calls** — `positive_conflicting_conditional` has a genuinely-disputable label. One such case per dataset is healthy (it tests the annotator's judgment too) but it should be flagged so its failures aren't over-interpreted.
