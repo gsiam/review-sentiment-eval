@@ -22,6 +22,11 @@ a marker (e.g., `*` for instability), prose should add interpretation, not repea
 the encoding. Write what the marker *means* for this case; don't restate that it
 is "flagged unstable."
 
+**Use a key when a symbol has multiple meanings** — if a verdict marker encodes
+two structurally distinct outcomes (e.g., universal miss vs run-level instability),
+the preamble must include a key that distinguishes them. Relying on context to
+disambiguate produces tables that appear consistent but are not.
+
 ## External-Reader Documents
 
 **Frame before presenting** — introductory sections carry more weight than they
