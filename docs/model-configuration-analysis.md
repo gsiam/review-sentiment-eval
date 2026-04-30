@@ -400,7 +400,7 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 - **Calibration cases cover two distinct failure modes** — the precision-loss cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surface 3 universal judge misses that the classic-error cases (hallucinated, negation_flip, attribution_swap, number_swap) do not. The two groups are not interchangeable (see [§6.6](#66-faithfulness-misses-precision-loss-and-under-specification)).
 - **Multilingual** — out of scope for this project. Not a gap in the current methodology.
 - **Longer documents** — all cases are short reviews (< 100 words typically, < 300 max). Summary of long-form documents is a different problem with different failure modes; not covered here.
-- **Single-judgment calls** — `positive_conflicting_conditional` has a genuinely-disputable label. One such case per dataset is healthy (it tests the annotator's judgment too) but it should be flagged so its failures aren't over-interpreted.
+- **Single-judgment calls** — `positive_conflicting_conditional` has a genuinely-disputable label. One such case per dataset is healthy (it tests the annotator's judgment too) but it should be flagged so its failures aren't over-interpreted. Pending: convert to analysis-only by removing `expected_sentiment` from `data/test_dataset.json` before the next suite run (see [design-decisions.md](design-decisions.md) item 19).
 
 ---
 
