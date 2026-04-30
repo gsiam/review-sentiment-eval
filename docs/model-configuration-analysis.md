@@ -378,6 +378,20 @@ The WS summary decomposed into 6 statements, all faithful. The weak model paraph
 
 **Mitigation**: pair faithfulness with a **recall or coverage-style counterpart** — a metric that asks whether the summary represents the key claims in the source, not just whether its own claims are supported (e.g., Ragas `answer_recall`, or a custom check that scores how many source-side claims appear in the summary). Without it, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal" (see also [§4](#4-threshold-validation)).
 
+### 6.8 Model behaviour drift between CI runs
+
+CI evals gate deployments — they catch regressions introduced by code or prompt changes. They do not catch **model behaviour drift**: a provider can update underlying weights without changing the model ID, and `claude-sonnet-4-6` today is not guaranteed to behave identically in three months. Non-determinism (see [§6.3](#63-non-determinism-confound-3-run-evidence)) is a within-run phenomenon; drift is a between-run phenomenon with a different cause and a different detection mechanism.
+
+The risk is highest on boundary cases that sit at genuine judgment boundaries — `positive_conflicting_conditional`, `judge_faithful_spec_simplification`, `judge_unfaithful_magnitude_severity` — because these cases are already sensitive to model-internal variation and will surface provider-side changes before more stable cases do.
+
+**Mitigation**: a scheduled behavioural sentinel, separate from CI. Key design elements:
+
+- **Sentinel suite**: a fixed set of boundary cases (sensitive canaries) plus control cases (stable baselines such as `positive_baseline`, `negative_baseline`). Controls are essential — without them a shift in a boundary case is uninterpretable: it could be model drift or harness failure (changed library version, updated Ragas decomposition logic, different temperature handling).
+- **Metadata pinning per run**: model ID, Ragas version, temperature/top\_p settings, dataset hash, dependency lockfile hash, run date. Without this, model drift cannot be distinguished from prompt drift or library drift.
+- **Distribution comparison, not single outputs**: compare sentiment label distributions, faithfulness score median/range, and instability rate (max−min > 0.2) against a stored baseline.
+- **Alert levels**: hard alert if a control case flips from passing to failing (harness or severe model failure); soft alert if a boundary case distribution shifts ≥40 percentage points or a faithfulness median shifts ≥0.20 — triggering human review, not a red build.
+- **Explicit baseline updates**: baselines must be updated by deliberate commit with rationale. Silent baseline drift defeats the monitor.
+
 ---
 
 ## 7. Dataset Gaps
