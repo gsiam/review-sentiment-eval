@@ -3,16 +3,15 @@
 reports/aggregated.json.
 
 Loads the per-case × per-config × per-run aggregated scores and dumps the
-raw data used by the analysis doc: medians, ranges, instability flags,
-sentiment/conflict labels, adversarial results, calibration pass/fail
-counts, and summary rows. Run this whenever the analysis doc is edited
-to cross-check numeric cells against canonical data.
+raw data used by the analysis doc: per-case means, ranges, instability
+flags, sentiment/conflict labels, adversarial results, calibration
+correctness counts, and summary rows. Run this whenever the analysis doc
+is edited to cross-check numeric cells against canonical data.
 
 Usage:
     python scripts/model_doc_audit.py
 """
 import json
-import statistics
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,8 +21,8 @@ CONFIGS = ["SS", "SW", "WS", "WW"]
 THRESHOLD = 0.70
 
 
-def median(xs):
-    return statistics.median(xs)
+def mean(xs):
+    return sum(xs) / len(xs)
 
 
 def fmt_num(x):
@@ -58,7 +57,7 @@ def entry(case_id, config):
     robustness = [r.get("robustness") for r in runs]
     return {
         "scores": scores,
-        "median": median(scores),
+        "mean": mean(scores),
         "min": min(scores),
         "max": max(scores),
         "unstable": max(scores) - min(scores) > 0.2,
@@ -83,7 +82,8 @@ def print_table(title, cases):
             e = entry(case_id, cfg)
             star = "*" if e["unstable"] else ""
             row.append(
-                f"{fmt_num(e['median'])} [{fmt_num(e['min'])}-{fmt_num(e['max'])}]{star}"
+                f"{fmt_num(e['mean'])} [{fmt_num(e['min'])}-{fmt_num(e['max'])}]{star} "
+                f"fails {e['fails']}/3"
             )
         print(" | ".join(row))
 
@@ -132,16 +132,21 @@ def print_adversarial():
         print(case_id)
         for cfg in CONFIGS:
             e = entry(case_id, cfg)
+            flips = e["robustness_fails"]
             print(
                 " ",
                 cfg,
                 e["scores"],
-                "median",
-                fmt_num(e["median"]),
+                "mean",
+                fmt_num(e["mean"]),
+                "fails",
+                f"{e['fails']}/3",
                 "faith_result",
                 e["results"],
                 "robustness",
                 e["robustness"],
+                "flips",
+                f"{flips}/3",
                 "unstable",
                 e["unstable"],
             )
@@ -154,18 +159,46 @@ def print_calibration():
         print(case_id, "expected", expected)
         for cfg in CONFIGS:
             e = entry(case_id, cfg)
+            wrong = e["fails"] if expected else e["passes"]
             print(
                 " ",
                 cfg,
                 e["scores"],
-                "median",
-                fmt_num(e["median"]),
+                "mean",
+                fmt_num(e["mean"]),
                 "passes",
                 e["passes"],
                 "fails",
                 e["fails"],
+                "wrong",
+                f"{wrong}/3",
                 "unstable",
                 e["unstable"],
+            )
+    print("\n## Calibration pooled (6-run wrong N/6)")
+    for case_id in CALIBRATION:
+        expected = META[case_id]["expected_faithfulness_pass"]
+        # Strong judge: SS + WS, Weak judge: SW + WW
+        for label, cfgs in [("strong", ["SS", "WS"]), ("weak", ["SW", "WW"])]:
+            scores = []
+            wrong = 0
+            for cfg in cfgs:
+                e = entry(case_id, cfg)
+                scores.extend(e["scores"])
+                wrong += e["fails"] if expected else e["passes"]
+            pooled_mean = mean(scores)
+            pooled_min = min(scores)
+            pooled_max = max(scores)
+            print(
+                " ",
+                case_id,
+                label,
+                "mean",
+                fmt_num(pooled_mean),
+                "range",
+                f"[{fmt_num(pooled_min)}-{fmt_num(pooled_max)}]",
+                "wrong",
+                f"{wrong}/6",
             )
 
 
@@ -196,11 +229,11 @@ def print_failure_counts():
 
 
 def print_ss_sub1():
-    print("\n## SS normal/adversarial medians below 1.00")
+    print("\n## SS normal/adversarial means below 1.00")
     for case_id in NORMAL + ADVERSARIAL:
-        med = entry(case_id, "SS")["median"]
-        if med < 1.0:
-            print(case_id, fmt_num(med), entry(case_id, "SS")["scores"])
+        e = entry(case_id, "SS")
+        if e["mean"] < 1.0:
+            print(case_id, fmt_num(e["mean"]), e["scores"], f"fails {e['fails']}/3")
 
 
 def print_unstable():
@@ -217,14 +250,14 @@ def print_summary_rows():
     for cases, name in [(NORMAL, "normal"), (ADVERSARIAL, "adversarial"), (CALIBRATION, "calibration")]:
         print(name)
         for cfg in CONFIGS:
-            meds = [entry(c, cfg)["median"] for c in cases]
+            means = [entry(c, cfg)["mean"] for c in cases]
             print(
                 " ",
                 cfg,
-                "median_of_medians",
-                fmt_num(median(meds)),
-                "min_of_medians",
-                fmt_num(min(meds)),
+                "mean_of_means",
+                fmt_num(mean(means)),
+                "min_of_means",
+                fmt_num(min(means)),
                 "passes",
                 sum(entry(c, cfg)["passes"] for c in cases),
                 "fails",

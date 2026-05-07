@@ -29,23 +29,24 @@ UNFAITHFUL_LABELS = [
     "spec-simplification",
 ]
 
-# Pooled medians across SS+WS (strong judge, 6 runs) and SW+WW (weak judge, 6 runs).
+# Pooled means across SS+WS (strong judge, 6 runs) and SW+WW (weak judge, 6 runs).
 # Calibration cases use pre-written summaries so the summariser plays no role;
 # pooling eliminates the misleading implication that SS/WS differences are summariser-driven.
 # Ranges are (min, max) for unstable entries (max−min > 0.2), None for stable ones.
 CONFIGS = {
     "strong": {
-        "title": "Strong Judge (claude-sonnet-4-6) — pooled median (6 runs)",
+        "title": "Strong Judge (claude-sonnet-4-6) — pooled mean (6 runs)",
         "filename": "calibration_strong_judge.png",
-        # spec-simplification: SS [1,1,0.5] + WS [1,0.5,0.5] → sorted [0.5,0.5,0.5,1,1,1] → 0.75
+        # spec-simplification: SS [1,1,0.5] + WS [1,0.5,0.5] → mean = 4.5/6 = 0.75
         "faithful_scores": [1.00, 1.00, 1.00, 0.75],
         "faithful_ranges": [None, None, None, (0.50, 1.00)],
-        # mag-severity: SS [0,1,1] + WS [0,0,1] → sorted [0,0,0,1,1,1] → 0.50
-        "unfaithful_scores": [0.60, 0.00, 0.00, 0.50, 0.50, 1.00, 0.50, 0.50],
+        # mag-severity: SS [0,1,1] + WS [0,0,1] → mean = 3/6 = 0.50
+        # number-swap: mean = 0.53 (vs median 0.50; scores not symmetric)
+        "unfaithful_scores": [0.60, 0.00, 0.00, 0.53, 0.50, 1.00, 0.50, 0.50],
         "unfaithful_ranges": [None, None, None, None, (0.00, 1.00), None, None, None],
     },
     "weak": {
-        "title": "Weak Judge (ollama/mistral) — pooled median (6 runs)",
+        "title": "Weak Judge (ollama/mistral) — pooled mean (6 runs)",
         "filename": "calibration_weak_judge.png",
         "faithful_scores": [1.00, 1.00, 1.00, 1.00],
         "faithful_ranges": [None, None, None, None],

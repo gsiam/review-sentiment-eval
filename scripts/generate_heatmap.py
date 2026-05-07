@@ -19,7 +19,7 @@ OUT_DIR = Path(__file__).resolve().parent.parent / "docs" / "images"
 CONFIGS = ["SS", "SW", "WS", "WW"]
 
 # Each row: (label, SS, SW, WS, WW, unstable_col_indices)
-# Scores are medians across 3 runs.
+# Scores are means across 3 runs.
 # unstable = max−min > 0.2 for that cell.
 CASES: list[tuple[str, float, float, float, float, set[int]]] = [
     ("positive_baseline",                1.00, 1.00, 1.00, 1.00, set()),
@@ -29,15 +29,15 @@ CASES: list[tuple[str, float, float, float, float, set[int]]] = [
     ("positive_conflicting_logistics",   1.00, 0.83, 1.00, 1.00, set()),
     ("negative_conflicting_borderline",  0.90, 1.00, 1.00, 1.00, set()),
     ("negative_numeric_shortfall",       1.00, 1.00, 0.80, 1.00, set()),
-    ("negative_attribution_multiparty",  1.00, 1.00, 1.00, 0.75, set()),
-    ("positive_negation_double",         1.00, 0.80, 1.00, 0.67, {2}),  # WS unstable
-    ("negative_negation_rhetorical",     1.00, 1.00, 1.00, 1.00, set()),
+    ("negative_attribution_multiparty",  1.00, 1.00, 0.93, 0.75, set()),
+    ("positive_negation_double",         1.00, 0.80, 0.89, 0.67, {2}),  # WS unstable
+    ("negative_negation_rhetorical",     0.93, 1.00, 1.00, 1.00, set()),
     ("negative_distractor_delayed_failure", 1.00, 1.00, 1.00, 1.00, set()),
-    ("negative_timeline_shipping",       0.71, 1.00, 1.00, 1.00, set()),
+    ("negative_timeline_shipping",       0.76, 1.00, 1.00, 1.00, set()),
     ("negative_conflicting_noise",       1.00, 1.00, 0.86, 1.00, set()),
-    ("positive_conflicting_override",    0.89, 1.00, 1.00, 0.80, set()),
-    ("positive_conflicting_conditional", 1.00, 1.00, 1.00, 1.00, {1}),  # SW unstable
-    ("negative_sarcasm",                 0.71, 0.75, 0.00, 1.00, {1}),   # SW unstable
+    ("positive_conflicting_override",    0.86, 0.96, 1.00, 0.80, set()),
+    ("positive_conflicting_conditional", 1.00, 0.87, 1.00, 1.00, {1}),  # SW unstable
+    ("negative_sarcasm",                 0.71, 0.83, 0.00, 1.00, {1}),   # SW unstable
 ]
 
 
@@ -55,7 +55,7 @@ def main() -> None:
     im = ax.imshow(scores, cmap=cmap, norm=norm, aspect="auto")
 
     cbar = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
-    cbar.set_label("Faithfulness score (median)", fontsize=6.5)
+    cbar.set_label("Faithfulness score (mean)", fontsize=6.5)
     cbar.ax.axhline(y=THRESHOLD, color="#212121", linestyle="--", linewidth=1.5)
     cbar.ax.text(
         -0.1, THRESHOLD, "0.70 ─",
@@ -96,8 +96,8 @@ def main() -> None:
     ax.tick_params(which="both", length=0)
 
     ax.set_title(
-        "Normal-case faithfulness (median, 3 runs)\n"
-        "bold = below 0.70  ·  * = unstable (range > 0.2)",
+        "Normal-case faithfulness (mean, 3 runs)\n"
+        "* = unstable (range > 0.2)  ·  bold = mean below 0.70",
         fontsize=7,
         pad=14,
     )
