@@ -58,12 +58,12 @@ Refer to `.standards/general/`, `.standards/python/`,
 
 ### Analysis Data
 
-- `reports/aggregated.json` is the canonical data backing `docs/model-configuration-analysis.md`. It is tracked in git. Do not read it directly — run `scripts/model_doc_audit.py` instead to surface specific numbers without flooding the context window.
+- `reports/aggregated.json` is the canonical data backing `docs/model-configuration-analysis.md`. It is tracked in git. Do not read it directly — run `scripts/model_doc_audit.py` instead to surface specific numbers without flooding the context window. Output includes per-case means with `fails N/3` / `flips N/3` / `wrong N/3` counts, pooled 6-run calibration (`wrong N/6` by judge type), unstable entries, and summary rows. Compare output against doc cells manually — the script dumps canonical values; discrepancies are spotted by eye.
 - Run logs (`reports/*.log`, `reports/archive/`) are gitignored — large and already distilled into `aggregated.json`.
 
 ### Run Strategy for Config Analysis
 
-Each model configuration gets **3 fresh runs** on the full dataset. Report scores as `median [min–max]` per case. Flag any case where max−min > 0.2 as unstable (called out in methodology risks). Label logs distinctively (e.g. `reports/strong-strong-run1.log`). Single-run logs from before this convention are excluded from analysis tables.
+Each model configuration gets **3 fresh runs** on the full dataset. Report scores as `mean [min–max]` per case, with threshold-failure counts: `fails N/3` (faithfulness), `flips N/3` (robustness), `wrong N/3` (calibration). §4 calibration pools 6 runs (SS+WS or SW+WW) → `wrong N/6`. Flag any case where max−min > 0.2 as unstable. Label logs distinctively (e.g. `reports/strong-strong-run1.log`). Single-run logs from before this convention are excluded from analysis tables.
 
 ### Project-Specific
 
