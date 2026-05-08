@@ -21,3 +21,9 @@
 - Don't add `# removed` comments for deleted code
 - Don't re-export types "for compatibility" (if you move something, update the imports)
 - If something is unused, delete it completely
+
+## Doc Verification
+
+**State the goal alongside mechanical checks** — a verification prompt that only lists "find and check these strings" can confirm edits landed but cannot catch replacements that are technically correct and still fail the communication objective. Include one sentence on what an external reader should now be able to do that they couldn't before.
+
+**Audit the prompt's own factual claims before sending** — each claim in the verification prompt (annotation conventions, threshold values, image colour semantics) must be checked against the actual source (code, documents, data files), not session notes or handoff summaries. A verification prompt built on stale claims will pass incorrect doc state.
