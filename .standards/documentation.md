@@ -42,11 +42,15 @@ anchor slug and update all occurrences. Then run the link checker to confirm:
 lychee --include-fragments --root-dir . README.md CLAUDE.md 'docs/**/*.md'
 ```
 
+**Research paper links use author-year format** — `[Author et al., Year](url)`. Do not use bare URLs or generic link text ("literature", "here", "the paper"). Not yet lint-enforced; check manually when adding citations.
+
 ## External-Reader Documents
 
 **Frame before presenting** — introductory sections carry more weight than they
 appear to. Do not assume the reader has codebase context; make the analytical
 frame explicit before findings appear.
+
+**Gloss technical shorthand** — terms like "NLI", "temperature=0", or "statement decomposition" will lose readers without ML background. Prefer a plain-language mechanism explanation alongside or instead of the shorthand.
 
 ## Language
 

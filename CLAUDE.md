@@ -63,7 +63,7 @@ Refer to `.standards/general/`, `.standards/python/`,
 
 ### Run Strategy for Config Analysis
 
-Each model configuration gets **3 fresh runs** on the full dataset. Report scores as `mean [min–max]` per case, with threshold-failure counts: `fails N/3` (faithfulness), `flips N/3` (robustness), `wrong N/3` (calibration). §4 calibration pools 6 runs (SS+WS or SW+WW) → `wrong N/6`. Flag any case where max−min > 0.2 as unstable. Label logs distinctively (e.g. `reports/strong-strong-run1.log`). Single-run logs from before this convention are excluded from analysis tables.
+Each model configuration gets **3 fresh runs** on the full dataset. Report scores as `mean [min–max]` per case, with threshold-failure counts: `fails N/3` (faithfulness), `flips N/3` (robustness), `wrong N/3` (calibration). §4 calibration pools 6 runs (SS+WS or SW+WW) → `wrong N/6`. Flag any case where max−min > 0.2 as unstable. Annotation bold/label rules: `fails **N/3**` — bold when N ≥ 1, no annotation at all when N = 0 (faith columns); `flips **N/3**` — always shown, bold when N ≥ 1, `flips 0/3` unbolded (robustness columns); `wrong **N/3**` — bold when N ≥ 1, `wrong 0/3` unbolded (calibration columns). Label logs distinctively (e.g. `reports/strong-strong-run1.log`). Single-run logs from before this convention are excluded from analysis tables.
 
 ### Project-Specific
 
