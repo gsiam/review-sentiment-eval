@@ -9,7 +9,7 @@
   - Strong judge: `claude-sonnet-4-6` (Anthropic API, via Ragas `llm_factory`)
   - Weak summarizer: `ollama/llama3.2` (3B parameters, local)
   - Weak judge: `ollama/mistral` (7B parameters, local, OpenAI-compatible endpoint)
-- **Dataset:** 34 cases — 16 normal, 6 adversarial, 12 judge-calibration
+- **Dataset:** 34 cases — 16 normal, 6 adversarial, 12 judge-calibration. Source texts are short English customer-feedback reviews; multilingual and long-document summarization are outside this suite's scope.
 - **Configurations tested:** 4 (strong/strong, strong/weak, weak/strong, weak/weak)
 - **Runs per config:** 3 (12 integration runs total)
 - **Temperature:** 0 for all models (summarizer and judge)
@@ -335,7 +335,7 @@ Both would inflate apparent reliability if present.
 
 **The unresolvable residual is the *blind spot* form:** shared training could cause both model instances to miss the same error class entirely, with no low-scored cases as evidence.
 
-> **Mitigation status — cross-family judge proposed**: a cross-family judge (e.g., OpenAI, Gemini) is the missing baseline. It would reduce same-family bias by breaking stylistic coupling between summariser and judge, and by breaking shared-training correlation. It would not eliminate all risk — a cross-family judge can still have its own leniency or blind spots — but it would remove the specific Claude-on-Claude correlated failure mode. Not currently in this dataset; see [§8 rec. 6](#8-recommendations).
+> **Mitigation status — cross-family judge proposed**: a cross-family judge (e.g., OpenAI, Gemini) is the missing baseline. It would reduce same-family bias by breaking stylistic coupling between summariser and judge, and by breaking shared-training correlation. It would not eliminate all risk — a cross-family judge can still have its own leniency or blind spots — but it would remove the specific Claude-on-Claude correlated failure mode. Not currently in this dataset; see [§7 rec. 8](#7-recommendations).
 >
 > **Mitigation status — stricter grounding proposed**: A stricter form of the faithfulness check — extracting atomic claims from the summary and verifying each has an explicit anchor in the source text, rather than relying on NLI entailment alone — would surface precision-softening cases that NLI passes (see [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification)). Not currently implemented. A stronger deterministic check — grounding against a structured knowledge base (product catalogue, specs) — would also cover known attribute classes, and is a natural extension for production deployments.
 
@@ -366,7 +366,7 @@ Across 12 runs, 10 (case × config) entries are flagged as unstable (max−min >
 
 Nine of the 10 instabilities fall into two broad buckets: Mistral judge instability on difficult normal/adversarial summaries, or Sonnet judge instability on calibration cases involving borderline entailment. The one exception is `positive_negation_double` under WS — a Sonnet judge on a normal negation case, flipping between 1.00 and 0.67 as it parses litotes inconsistently. WS vs SS on `judge_unfaithful_magnitude_severity` is particularly striking: identical summary + source + judge, different runs produce 0.00 vs 1.00. A single-run analysis of this case could have told any story.
 
-> **Mitigation status — instability measured**: Three runs with mean [min–max] is the current policy and it did what it was supposed to — the instabilities are visible, and no single number is load-bearing. Raising to 5 runs would tighten the bands, but [Gonzalez et al., 2025](https://arxiv.org/abs/2509.24086) suggests only a 5% standard-error reduction from 1 to 3 runs, with diminishing returns beyond that; it isn't necessary for the conclusions here. The 0.2 instability threshold is a pragmatic round number. Its value is robust for this dataset: the minimum range among the 10 flagged entries is 0.25, so any cutoff from 0.20 up to 0.25 produces the same flagged set. The more principled criterion is *whether a case straddles the pass bar* — at least one run fails and at least one passes. But spread and straddling are not the same: a wide spread can flag a case that always passes, as happens here with `negative_sarcasm` SW and `adversarial_markdown_table` SW. Therefore, for this dataset, 0.2 is conservative rather than wrong.
+> **Mitigation status — instability measured**: Three runs with mean [min–max] is the policy for this diagnostic analysis and it did what it was supposed to — the instabilities are visible, and no single number is load-bearing. Raising to 5 runs would tighten the bands but adds little. [Gonzalez et al., 2025](https://arxiv.org/abs/2509.24086) find that single runs often produce different model orderings than multi-run averages, even though averaging barely changes the scores themselves.[^3] The point of repeating runs is that *orderings* can flip — not that the *numbers* get much more precise. The paper recommends at least 2 repetitions. This analysis uses 3 as the top tier of the [§7 rec. 3](#7-recommendations) runs-per-case strategy, appropriate when unstable cases need to be made visible; lighter CI tiers can use 2. The 0.2 instability threshold is a pragmatic round number. Its value is robust for this dataset: the minimum range among the 10 flagged entries is 0.25, so any cutoff from 0.20 up to 0.25 produces the same flagged set. The more principled criterion is *whether a case straddles the pass bar* — at least one run fails and at least one passes. But spread and straddling are not the same: a wide spread can flag a case that always passes, as happens here with `negative_sarcasm` SW and `adversarial_markdown_table` SW. Therefore, for this dataset, 0.2 is conservative rather than wrong.
 >
 > **Follow-up — `spec_simplification` prompt hypothesis**: The `judge_faithful_spec_simplification` instability has an identifiable mechanism distinct from general scoring noise. Sonnet recognises "DSE" as a technical abbreviation and, in 3 of 6 Sonnet-judged runs, treats the faithful summary's "dirty screen effect" expansion as a claim not present in the source — hyperliteral NLI rather than semantic equivalence. Mistral scores the same summary 1.00 in all 3 runs, likely because it applies a shallower domain-knowledge check and does not distinguish the abbreviation from its expansion. Since this case represents a real risk (faithful summaries incorrectly rejected), the instability warrants a hypothesis for improvement rather than just better measurement. **Hypothesis**: adding a constraint to the faithfulness judge prompt — instructing it to treat standard acronym expansions as faithful paraphrase — would reduce or eliminate the wrong-verdict rate on this case without affecting other calibration cases. This follows the same pattern identified for strong models in the [exploratory findings](exploratory-findings.md#1-strong-summarizer-over-derives-beyond-the-source): strong models over-infer and the fix is a constraint, not broader guidance. Testable by re-running the 3 Sonnet-judge runs on this case with the modified prompt.
 >
@@ -425,28 +425,29 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 
 ---
 
-## 7. Dataset Gaps
-
-- **Calibration cases cover two distinct failure modes** — the precision-loss cases (magnitude-severity, magnitude-precision, scope-condition, spec-simplification) surface 3 universal judge misses that the classic-error cases (hallucinated, negation_flip, attribution_swap, number_swap) do not. The two groups are not interchangeable (see [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification)).
-- **Multilingual** — out of scope for this project. Not a gap in the current methodology.
-- **Longer documents** — all cases are short reviews (< 100 words typically, < 300 max). Summary of long-form documents is a different problem with different failure modes; not covered here.
-- **Single-judgment calls** — `positive_conflicting_conditional` has a genuinely-disputable label. One such case per dataset is healthy (it tests the annotator's judgment too) but it should be flagged so its failures aren't over-interpreted. Pending: convert to analysis-only by removing `expected_sentiment` from `data/test_dataset.json` before the next suite run (see [design-decisions.md](design-decisions.md) item 19).
-
----
-
-## 8. Recommendations
+## 7. Recommendations
 
 1. **CI gating config: Strong/Strong** — 48/48 faithfulness, 18/18 robustness, sentiment misses confined to one defensible boundary case: `positive_conflicting_conditional` (3/48 failed sentiment observations). The same-family bias is a known risk but does not invalidate the config for the failure modes currently in the dataset. Acceptable as the quality baseline for PR gating.
 
 2. **Cost-reduced CI alternative: Strong/Weak** — 47/48 faithfulness, 18/18 robustness, same sentiment accuracy as SS. Calibration is weaker on two unfaithful cases: SW is wrong 3/3 on `judge_unfaithful_scope_condition` (vs SS wrong 0/3) and wrong 3/3 on `judge_unfaithful_magnitude_severity` (vs SS wrong 2/3); introduces adversarial faithfulness instability. Partially offset by zero wrong verdicts on `judge_faithful_spec_simplification` (vs SS wrong 1/3). Acceptable if API budget matters more than calibration precision. **Not acceptable as the only CI config** because it is wrong 3/3 on `judge_unfaithful_scope_condition`.
 
-3. **Do not use WS or WW for CI gating.** WS surfaces llama3.2's failures honestly but has 34/198 assertion failures per 3-run pass; WW masks them (42/198, with the "masking" inflating pass rates on some cases). Both are suitable as **development loops** where speed and cost matter more than ground-truth quality.
+3. **Tier runs-per-case to reduce CI cost.** This analysis uses 3 runs per case to stabilise rankings (see [§6.3](#63-non-determinism-confound-3-run-evidence)) — appropriate for diagnostic work, but more than routine CI needs. [Gonzalez et al., 2025](https://arxiv.org/abs/2509.24086) recommend ≥2 repetitions, and standard error barely shifts past 2 runs. Suggested tiering:
 
-4. **Known unfixable-at-the-threshold gap**: `judge_unfaithful_magnitude_precision` is a universal miss. Do not raise the threshold to compensate — the score is 1.00, not 0.71. If precision-loss errors matter for a real use case, add a **second metric** (or a guardrail prompt check) specifically targeting quantitative and conditional claim preservation.
+   - **1 run for deterministic, non-LLM checks** — length ratios, format validation, entity-overlap checks against the source. No model involved, so verdict stability isn't a concern; failures are exact.
+   - **2 runs with agreement-check-plus-escalation** for binary pass/fail CI gating: pass/pass and fail/fail decide; disagreement triggers a 3rd run or human review.
+   - **3 runs** whenever the output is a mean, range, ranking, or instability count (`fails N/3`, `flips N/3`, `wrong N/3`, `wrong N/6`) — diagnostic reports, model comparisons, calibration analysis, and any conclusion that depends on `mean [min–max]`.
 
-5. **Split-schema sentiment + conflicting** (already in place) works — the strong summarizer achieves 30/30 conflicting accuracy, weak summarizer 21/30, and the failure patterns are interpretable. Do not merge the fields back.
+   Where the 2-run tier applies, it cuts CI runs by up to one-third versus uniform 3-run, and when both runs agree the binary verdict matches a 3-run majority. Two caveats: it preserves the verdict but not the score distribution; and it cannot detect same-side instability — cases that always pass but vary widely, like `negative_sarcasm` SW and `adversarial_markdown_table` SW (see [§6.3](#63-non-determinism-confound-3-run-evidence)).
 
-6. **Next expansion: cross-family judge experiment** — The practical question is whether Sonnet can serve as its own judge without introducing leniency bias. If it can, SS is the simpler, cheaper production config — Sonnet is already in the stack. The current aggregate data argues against leniency ([§6.1](#61-same-family-judgesummarizer-bias)): Sonnet scores its own summaries *lower* than Mistral on 6/9 divergent normal cases (mean SS 0.94 vs SW 0.96).
+4. **Do not use WS or WW for CI gating.** WS surfaces llama3.2's failures honestly but has 34/198 assertion failures per 3-run pass; WW masks them (42/198, with the "masking" inflating pass rates on some cases). Both are suitable as **development loops** where speed and cost matter more than ground-truth quality.
+
+5. **Known unfixable-at-the-threshold gap**: `judge_unfaithful_magnitude_precision` is a universal miss. Do not raise the threshold to compensate — the score is 1.00, not 0.71. If precision-loss errors matter for a real use case, add a **coverage metric** specifically targeting quantitative and conditional claim preservation.
+
+6. **Split-schema sentiment + conflicting** (already in place) works — the strong summarizer achieves 30/30 conflicting accuracy, weak summarizer 21/30, and the failure patterns are interpretable. Do not merge the fields back.
+
+7. **Convert disputable sentiment labels to analysis-only before the next suite run.** `positive_conflicting_conditional` is a genuine judgment-boundary case: both the asserted `positive` label and Sonnet's `neutral`/`negative` readings are defensible. Remove `expected_sentiment` from that dataset entry so the case still runs, logs, and contributes faithfulness/conflicting-signal evidence without counting a defensible interpretation as a CI failure (see [design-decisions.md](design-decisions.md) item 19).
+
+8. **Next expansion: cross-family judge experiment** — The practical question is whether Sonnet can serve as its own judge without introducing leniency bias. If it can, SS is the simpler, cheaper production config — Sonnet is already in the stack. The current aggregate data argues against leniency ([§6.1](#61-same-family-judgesummarizer-bias)): Sonnet scores its own summaries *lower* than Mistral on 6/9 divergent normal cases (mean SS 0.94 vs SW 0.96).
 
    That comparison is not controlled — each run generates fresh summaries, mixing judge calibration and summarizer variance. A controlled test requires generating Sonnet summaries once, storing them as a fixed artifact, and having Sonnet, Mistral, and a third-family judge (OpenAI or Gemini) score that identical input set. If Sonnet scores comparably to the third judge, leniency is not a concern and SS is validated. If it scores consistently higher, the bias is real and a cross-family judge is necessary.
 
@@ -462,7 +463,7 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 
 ---
 
-## 9. Relation to the Exploratory Findings Document
+## 8. Relation to the Exploratory Findings Document
 
 This analysis treats the summarizer and judge prompts as fixed and varies the model backends. Holding the prompts constant is deliberate — it isolates the configuration axis and keeps this document as a single comparable evaluation.
 
@@ -473,3 +474,5 @@ During the analysis, several failure patterns surfaced that point to changes in 
 [^1]: Rough scale calculation: if the historical judge accuracy is 90%, then 250 independent calibration cases give sampling noise of about 2 percentage points. A simple one-sided drift rule would flag results below roughly 87%; if the true accuracy had dropped to 85%, that rule would catch it about 80% of the time. This is only a back-of-the-envelope fixed-baseline calculation. If two model versions are compared on the same cases, the evidence depends on the flips: how many cases go from correct to wrong, and how many go from wrong to correct.
 
 [^2]: Recent behavioural-shift auditing work ([Richter et al., 2025](https://openreview.net/forum?id=h0jdAboh0o)) treats even warning-system detection as a larger statistical test, with meaningful detection demonstrated using hundreds of examples before triggering fuller large-scale evaluation.
+
+[^3]: On the AI4Math Benchmark, 10 of 12 test groups contained at least one model ordering that differed between a single run and a 3-run average. Standard-error reduction from 1 to 3 runs is only about 5%. Their setup uses stochastic decoding (sampling-based generation with temperature > 0, top-p, or top-k) on a math benchmark; this suite runs at temperature 0 on summarisation, so the finding is directional support rather than a direct rule.
