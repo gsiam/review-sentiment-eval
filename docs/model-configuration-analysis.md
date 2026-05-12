@@ -67,7 +67,7 @@ Mean [min–max] across 3 runs; see Fig. 2a for a visual overview. Entries marke
 
 **Notable:**
 
-- **SS (48/48)** — lowest mean is 0.71 on `negative_sarcasm`; next-lowest are 0.76 on `negative_timeline_shipping` and 0.86 on `positive_conflicting_override`. Zero failures across 3 runs. Notably, WS scores 1.00 on both `negative_timeline_shipping` and `positive_conflicting_override` under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see [§6.6](#66-faithfulness-can-invert-apparent-summarizer-quality-rankings)).
+- **SS (48/48)** — lowest mean is 0.71 on `negative_sarcasm`; next-lowest are 0.76 on `negative_timeline_shipping` and 0.86 on `positive_conflicting_override`. Zero failures across 3 runs. Notably, WS scores 1.00 on both `negative_timeline_shipping` and `positive_conflicting_override` under the same Sonnet judge — the weak summarizer outscores the strong one. This is not a quality reversal; it reflects the strong model introducing derived claims the judge correctly penalises (see [§6.6](#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one)).
 - **SW** — one failure: `positive_conflicting_conditional` scores 0.60 on run 1 and 1.00 on runs 2–3 (mean 0.87, fails 1/3). `negative_sarcasm` mean 0.83, no threshold failures.
 - **WS** — `negative_sarcasm` collapses to 0.00 in all 3 runs (fails 3/3). llama3.2 strips the sarcasm and writes a literal "customer loves it" summary, which Sonnet correctly scores as unfaithful to the actually-negative source. This is a summarizer failure surfaced through the judge. `positive_negation_double` slips below threshold in 1 of 3 runs (mean 0.89, fails 1/3).
 - **WW** — `positive_negation_double` is the only case with threshold failures (mean 0.67, fails 3/3); Mistral's scoring on litotes-heavy text is unreliable. `negative_sarcasm` scores 1.00 because Mistral passes the same llama3.2 hallucination that Sonnet flagged — a miss driven by weak-judge leniency.
@@ -272,7 +272,7 @@ See Figs. 4a–b for score distributions across faithful and unfaithful calibrat
 - The **classic-error unfaithful cases** (hallucinated, negation_flip, attribution_swap, number_swap) are cleanly separated from the faithful calibration cases for both judges — unfaithful scores top out at 0.60, faithful scores bottom out at 0.75 — and 0.70 sits inside that gap.
 - The **precision-loss cases** (magnitude/scope/spec) expose a fundamental limitation of the faithfulness metric: *statement decomposition doesn't capture **precision loss** or **scope reduction** when the softer claim remains factually true*. Both judges miss `magnitude_precision` on the unfaithful side, scoring 1.00 when they should score below threshold. Sonnet is also unreliable on `magnitude_severity` (unfaithful) — scoring 0.00 and 1.00 equally across 6 runs (pooled mean 0.50, wrong 3/6); it gets it right on average but cannot be trusted. Mistral misses `magnitude_severity` universally and additionally misses `scope_condition`, giving the weak judge 3 misses on unfaithful cases (wrong 6/6 each).
 - **`spec_simplification`: Sonnet wrongly rejects a faithful summary** — treating the correct expansion of "DSE" as "dirty screen effect" as unsupported inference in 3 of 6 Sonnet-judged runs. Mistral doesn't, because its domain knowledge is shallower.
-- The threshold itself does not need adjustment. For precision-loss universal misses (bullet 2), the scores are 1.00 — raising the threshold cannot reach them; the fix is a **different metric** (see [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification)–[§6.6](#66-faithfulness-can-invert-apparent-summarizer-quality-rankings)). For `spec_simplification` wrong verdicts (bullet 3), lowering the threshold would not reliably help either: the judge scores the same faithful summary 0.50 in some runs and 1.00 in others, and lowering to 0.60 or below would start passing `hallucinated` as faithful. The problem is judge non-determinism, not threshold placement.
+- The threshold itself does not need adjustment. For precision-loss universal misses (bullet 2), the scores are 1.00 — raising the threshold cannot reach them; the fix is a **different metric** (see [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification)–[§6.6](#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one)). For `spec_simplification` wrong verdicts (bullet 3), lowering the threshold would not reliably help either: the judge scores the same faithful summary 0.50 in some runs and 1.00 in others, and lowering to 0.60 or below would start passing `hallucinated` as faithful. The problem is judge non-determinism, not threshold placement.
 
 ### Calibration set size
 
@@ -318,8 +318,8 @@ They are not sufficient for **quantitative monitoring**: estimating the judge's 
 | Case designer bias | **Reduced** | Cross-family seeding plus human review makes pure Claude-family case design less likely. Missing case classes remain possible. |
 | Non-determinism confound | **Measured** | Three-run reporting makes unstable cases visible. It does not make the judge deterministic. `spec_simplification` has a testable prompt hypothesis; `magnitude_severity` is a known limitation of the current Ragas NLI setup. |
 | Weak-judge score inflation | **Operationally handled** | Do not use WW as quality evidence; use Sonnet or another strong/cross-family judge when measuring weak summarizer quality. |
-| Precision loss / under-specification | **Open** | Needs an additional precision/recall or numeric/conditional preservation check. Threshold changes will not fix it. |
-| Faithfulness ranking inversion | **Open** | Needs a recall/coverage counterpart to faithfulness. Faithfulness alone will keep rewarding minimal summaries. |
+| Precision loss / under-specification | **Open** | Faithfulness can pass summaries that are true but too vague, especially when numeric, conditional, scope, or severity details are weakened. Needs a source-to-summary coverage metric for key source claims, alongside faithfulness. |
+| Faithfulness ranking inversion | **Open** | Faithfulness can make minimal literal summaries look better than richer summaries that introduce unsupported inferences. Use the same coverage metric as for precision loss / under-specification to separate accurate coverage from safe minimalism. |
 | Model behaviour drift | **Canary proposed** | A scheduled behavioural canary can surface drift candidates, but cannot prevent provider-side model changes. |
 
 ### 6.1 Same-family judge/summarizer bias
@@ -388,9 +388,9 @@ All three are universal misses for the weak judge — wrong 3/3 in each weak-jud
 
 **This is a threshold-independent gap.** Raising the threshold to 0.80 or 0.90 wouldn't catch these because the scores are 1.00.
 
-> **Mitigation status — preservation metric proposed**: add a complementary metric (e.g., a precision/recall style check against quantitative and conditional claims in the source) or an additional guardrail prompt that specifically tests for information preservation on numeric and conditional statements.
+> **Mitigation status — coverage metric proposed**: add a complementary source-to-summary coverage metric that measures how many key source claims are preserved in the summary, with special attention to quantitative values, conditions, scope limits, and severity markers.
 
-### 6.6 Faithfulness can invert apparent summarizer quality rankings
+### 6.6 Faithfulness can rank a weaker summariser above a stronger one
 
 Several normal cases show **WS scoring higher than SS** under the same Sonnet judge — the clearest examples being `negative_timeline_shipping` (SS mean 0.76 vs WS mean 1.00) and `positive_conflicting_override` (SS mean 0.86 vs WS mean 1.00). The surface reading — that the weak summarizer produced better output — is misleading. This is the mirror image of [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification): where §6.5 shows the metric *missing* under-specified claims, here it is *correctly penalising* over-specified ones. The strong model hallucinates; the weak model stays literal. Both effects come from the same limitation: the metric checks whether each extracted claim is supported, but it does not judge whether the summary preserves the source at the right level of specificity. Over-derived claims from a capable summariser are penalised when they go beyond the source; under-specified claims can pass because their weaker statements are still supported.
 
@@ -405,7 +405,9 @@ The WS summary, on the other hand, decomposed into 6 statements, all faithful. T
 
 **This creates structural pressure toward conservative, minimal output.** A system optimising for faithfulness score alone could theoretically maximise it by producing shorter summaries with fewer claims — each one trivially traceable to the source. However, that is not a useful summariser: it means the metric can rank a more capable summariser below a weaker one — and the gap widens as the capable model becomes more willing to synthesise and elaborate.
 
-> **Mitigation status — coverage counterpart proposed**: pair faithfulness with a **recall or coverage-style counterpart** — a metric that asks whether the summary represents the key claims in the source, not just whether its own claims are supported (e.g., Ragas `answer_recall`, or a custom check that scores how many source-side claims appear in the summary). Without it, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal".
+In other words, faithfulness works in the summary-to-source direction: it checks whether the summary's own claims are supported. The missing counterpart works in the source-to-summary direction: it checks whether the summary preserves the key claims from the source.
+
+> **Mitigation status — same coverage metric proposed**: this is the same mitigation proposed in [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification). Pair faithfulness with a source-to-summary coverage metric that checks whether the summary preserves the key claims in the source. Without a coverage counterpart, a faithfulness-only evaluation cannot distinguish "faithful because accurate" from "faithful because minimal".
 
 ### 6.7 Model behaviour drift between CI runs
 
@@ -464,7 +466,7 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 
 This analysis treats the summarizer and judge prompts as fixed and varies the model backends. Holding the prompts constant is deliberate — it isolates the configuration axis and keeps this document as a single comparable evaluation.
 
-During the analysis, several failure patterns surfaced that point to changes in the summarizer prompt rather than the model selection — for example, the strong summarizer's over-derivation on `negative_timeline_shipping` ([§6.6](#66-faithfulness-can-invert-apparent-summarizer-quality-rankings)) and the weak summarizer's sarcasm blindness ([§3.1](#31-sarcasm-blindness-summarizer-quality)). Those belong to a *different* system under test, so they are documented separately in [exploratory-findings.md](exploratory-findings.md) as inputs to a follow-up evaluation cycle.
+During the analysis, several failure patterns surfaced that point to changes in the summarizer prompt rather than the model selection — for example, the strong summarizer's over-derivation on `negative_timeline_shipping` ([§6.6](#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one)) and the weak summarizer's sarcasm blindness ([§3.1](#31-sarcasm-blindness-summarizer-quality)). Those belong to a *different* system under test, so they are documented separately in [exploratory-findings.md](exploratory-findings.md) as inputs to a follow-up evaluation cycle.
 
 ---
 
