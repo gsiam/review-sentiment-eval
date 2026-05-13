@@ -49,6 +49,8 @@ pytest -m integration --log-cli-level=INFO
 Before modifying core modules (`summarizer.py`, `faithfulness_evaluator.py`, `robustness_checker.py`, `logging_callback.py`) or their tests, read `docs/design-decisions.md`.
 For project structure and architecture diagrams, see `README.md`.
 
+`docs/design-decisions.md` is for *implemented* decisions only. Pre-implementation or deferred design (e.g., the behavioural canary, third-family judge experiment) lives in the plan's "Deferred / Open Discussion" section or the analysis doc's recommendations; items graduate to `design-decisions.md` only when the corresponding code lands.
+
 ## Standards
 
 Refer to `.standards/general/`, `.standards/python/`,
@@ -69,3 +71,8 @@ Each model configuration gets **3 fresh runs** on the full dataset. Report score
 
 - Python 3.10+
 - Pytest markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.adversarial`, `@pytest.mark.ragas_ci`
+
+### Model IDs
+
+- `claude-sonnet-4-6` and other dateless 4.6+ IDs are **pinned snapshots** — Anthropic does not update weights or configuration under the same ID. Pre-4.6 dateless IDs (e.g. `claude-sonnet-4-5`) ARE mutable aliases that resolve to the latest dated snapshot.
+- Observable behaviour can still shift for any pinned ID due to provider-side infrastructure (serving layer, safety classifiers, sampling logic) — not weight replacement.
