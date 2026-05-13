@@ -26,4 +26,12 @@
 
 **State the goal alongside mechanical checks** — a verification prompt that only lists "find and check these strings" can confirm edits landed but cannot catch replacements that are technically correct and still fail the communication objective. Include one sentence on what an external reader should now be able to do that they couldn't before.
 
+**Verify external statistics against the primary source** — when quoting an
+empirical figure from a paper, blog, or external document, fetch the original
+and confirm wording before inline use. User-provided snippets and HTML
+previews may reframe or aggregate findings (e.g., a per-slice measure
+quoted as a per-case rate). Also check experimental context (decoding
+strategy, benchmark domain) — a result from a different setup may only be
+directional support, not a direct rule.
+
 **Audit the prompt's own factual claims before sending** — each claim in the verification prompt (annotation conventions, threshold values, image colour semantics) must be checked against the actual source (code, documents, data files), not session notes or handoff summaries. A verification prompt built on stale claims will pass incorrect doc state.

@@ -17,6 +17,18 @@ personal-standards/
 └── README.md
 ```
 
+## Authoring Rules
+
+Keep entries project-agnostic. Do not embed:
+
+- Filenames specific to a project (`aggregated.json`, `summarizer.py`)
+- Tool-specific paths or module names
+- Concrete numeric thresholds tied to a particular dataset
+
+If a rule needs a concrete example, use a generic placeholder (e.g.,
+"a generated data file"). Project-specific decisions belong in
+`design-decisions.md` or the project's `CLAUDE.md`.
+
 ## Usage
 
 ### As a Git Subtree

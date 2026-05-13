@@ -27,6 +27,41 @@ two structurally distinct outcomes (e.g., universal miss vs run-level instabilit
 the preamble must include a key that distinguishes them. Relying on context to
 disambiguate produces tables that appear consistent but are not.
 
+## Analysis Document Sections
+
+**Section content must match section name** — a section whose heading names
+a specific scope (e.g. "Dataset Gaps", "Open Bugs") should contain only items
+matching that scope. Scope exclusions ("X is out of scope") belong in preamble
+or methodology notes. When auditing, ask: "Is this missing something that
+should be there, or explaining why something isn't there?" Only the former
+belongs.
+
+**Drop zero-finding sections** — a section that reports only a negative
+result (zero failures, zero errors) with no decision, no risk, and no
+verifiable before/after for the reader adds length without insight. Remove
+rather than retain for completeness.
+
+**Use specific descriptive status labels in risk/limitation sections** — name
+the actual state or proposed action ("instability measured", "coverage metric
+proposed") rather than generic abstract labels ("proposed, not implemented").
+Specific labels communicate actionability without forcing the reader to parse
+prose. Use blockquote format (`>`) to visually distinguish status notes. When
+no mitigation exists, prefix with "Follow-up —" or "Known limitation —"
+instead of forcing "Mitigation status —".
+
+**Unify terminology when sections propose the same idea** — if two sections
+propose the same metric family or mechanism under different names, pick one
+term and cross-reference from the second section ("this is the same approach
+proposed in §X"). Distinguish directional framing precisely (e.g.,
+summary-to-source vs source-to-summary) rather than reusing a loose term
+across both.
+
+**Label terminology must match data behaviour** — a label like "flips" implies
+a binary pass/fail switch and should be reserved for cases where at least one
+run fails and at least one passes. Use "unstable" when the score varies but
+never crosses the threshold. Do not use a binary-verdict label for a
+non-binary phenomenon.
+
 ## Cross-References and Links
 
 **Link on first mention, plain text after** — when the same section or document
@@ -41,6 +76,15 @@ anchor slug and update all occurrences. Then run the link checker to confirm:
 ```bash
 lychee --include-fragments --root-dir . README.md CLAUDE.md 'docs/**/*.md'
 ```
+
+**Cross-references must directly support the current claim** — only include
+`see also §X` when the linked section qualifies or supports the specific
+point. Tangential links — where the referenced section is related but does
+not speak to the current claim — add noise without information. Remove them.
+
+**Do not use "Same" shorthand in tables** — a cell that says "Same" or
+"Same — \<qualifier\>" relies on adjacent rows staying put. If rows shift,
+the reference silently breaks. Repeat the explicit note text instead.
 
 **Research paper links use author-year format** — `[Author et al., Year](url)`. Do not use bare URLs or generic link text ("literature", "here", "the paper"). Not yet lint-enforced; check manually when adding citations.
 
