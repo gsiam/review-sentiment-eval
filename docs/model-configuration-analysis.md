@@ -15,7 +15,7 @@
 - **Temperature:** 0 for all models (summarizer and judge)
 - **Aggregation:** mean [min–max] across 3 runs. Threshold-failure counts are reported as `fails N/3` for normal/adversarial faithfulness and as `flips N/3` for adversarial robustness. Judge calibration uses `wrong N/3` (runs where the judge returned the opposite of `Expected`). Cases where max−min > 0.2 are flagged as unstable. [§4](#4-threshold-validation) pools the calibration data across 6 runs (SS+WS for the strong judge, SW+WW for the weak) and reports `wrong N/6`.
 - **Interpretation:** this is a targeted diagnostic suite, not a representative production sample. Cases are intentionally concentrated around difficult behaviours: conflicting sentiment, negation, sarcasm, adversarial instructions, precision loss, and judge-calibration edge cases. Aggregate pass rates summarise performance on this suite; they are interpreted below alongside the per-case and failure-mode breakdowns, not as production accuracy estimates.
-- **JSON parse failures (llama3.2):** 0 across all runs
+- **JSON parse fallback warnings:** 0 found in source logs. This count is log-derived; parse status is not stored as a first-class field in `reports/aggregated.json`.
 - **Source logs:** `reports/{strong-strong,strong-weak,weak-strong,weak-weak}-run{1,2,3}.log`
 
 ---
@@ -320,6 +320,7 @@ They are not sufficient for **quantitative monitoring**: estimating the judge's 
 | Weak-judge score inflation | **Operationally handled** | Do not use WW as quality evidence; use Sonnet or another strong/cross-family judge when measuring weak summarizer quality. |
 | Precision loss / under-specification | **Open** | Faithfulness can pass summaries that are true but too vague, especially when numeric, conditional, scope, or severity details are weakened. Needs a source-to-summary coverage metric for key source claims, alongside faithfulness. |
 | Faithfulness ranking inversion | **Open** | Faithfulness can make minimal literal summaries look better than richer summaries that introduce unsupported inferences. Use the same coverage metric as for precision loss / under-specification to separate accurate coverage from safe minimalism. |
+| Malformed-output fallback can distort metrics | **Open** | Malformed summarizer JSON currently falls back to raw response, `neutral` sentiment, and `contains_conflicting_signals=false`. Current logs show 0 fallback warnings, but future nonzero fallback would contaminate downstream metrics unless tracked separately. |
 | Model behaviour drift | **Canary proposed** | A scheduled behavioural canary can surface drift candidates, but cannot prevent provider-side model changes. |
 
 ### 6.1 Same-family judge/summarizer bias
@@ -335,7 +336,7 @@ Both would inflate apparent reliability if present.
 
 **The unresolvable residual is the *blind spot* form:** shared training could cause both model instances to miss the same error class entirely, with no low-scored cases as evidence.
 
-> **Mitigation status — cross-family judge proposed**: a cross-family judge (e.g., OpenAI, Gemini) is the missing baseline. It would reduce same-family bias by breaking stylistic coupling between summariser and judge, and by breaking shared-training correlation. It would not eliminate all risk — a cross-family judge can still have its own leniency or blind spots — but it would remove the specific Claude-on-Claude correlated failure mode. Not currently in this dataset; see [§7 rec. 8](#7-recommendations).
+> **Mitigation status — cross-family judge proposed**: a cross-family judge (e.g., OpenAI, Gemini) is the missing baseline. It would reduce same-family bias by breaking stylistic coupling between summariser and judge, and by breaking shared-training correlation. It would not eliminate all risk — a cross-family judge can still have its own leniency or blind spots — but it would remove the specific Claude-on-Claude correlated failure mode. Not currently in this dataset; see [§7 rec. 9](#7-recommendations).
 >
 > **Mitigation status — stricter grounding proposed**: A stricter form of the faithfulness check — extracting atomic claims from the summary and verifying each has an explicit anchor in the source text, rather than relying on NLI entailment alone — would surface precision-softening cases that NLI passes (see [§6.5](#65-faithfulness-misses-precision-loss-and-under-specification)). Not currently implemented. A stronger deterministic check — grounding against a structured knowledge base (product catalogue, specs) — would also cover known attribute classes, and is a natural extension for production deployments.
 
@@ -423,6 +424,14 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 - **Automated confirmation before alerting**: a canary shift should trigger automatic triage before any human alert. The monitor should rerun affected boundary cases with additional repetitions, rerun relevant controls, and compare run metadata. If controls move, investigate harness, configuration, provider-serving, or broad model-behaviour issues before drawing conclusions from the boundary cases. Suppress the event if the shift is not repeatable or if controls/metadata point to a harness change. Only persistent shifts with stable controls should create a review ticket and trigger targeted suite expansion.
 - **Explicit baseline updates**: baselines must be updated by deliberate commit with rationale. Silent baseline drift defeats the monitor.
 
+### 6.8 Malformed-output fallback can distort metrics
+
+The summarizer prompt requires JSON, and `_parse_response` validates the expected `summary`, `overall_sentiment`, and `contains_conflicting_signals` fields. If parsing fails, the current harness logs a warning and falls back to using the raw response as `summary`, `neutral` as `overall_sentiment`, and `false` for `contains_conflicting_signals`; it does not assert parse failure as a standalone CI failure.
+
+That fallback keeps diagnostic runs moving, but it creates an attribution risk: a parse-format failure can look like a sentiment miss, conflicting-signal miss, faithfulness failure, or robustness change. The current 12-run matrix has 0 fallback warnings in the source logs, so the reported results are not known to be affected. However, `reports/aggregated.json` stores only post-parse values (`score`, `result`, `sentiment`, `conflicting`) and cannot prove that a run parsed cleanly.
+
+> **Mitigation status — parse metadata proposed**: future aggregation should store parse status separately, for example `parse_status`, `parse_strategy`, and optionally `parse_error` / `used_fallback`. In CI, parse fallback should be a case-level hard failure: continue the suite, preserve the raw response for triage, fail the final gate, and report parse failures separately from faithfulness, sentiment, conflicting, and robustness failures. Reruns may classify the issue as transient, intermittent, or repeatable, but should not erase the original fallback event.
+
 ---
 
 ## 7. Recommendations
@@ -433,21 +442,23 @@ The risk is highest on boundary cases that sit at genuine judgment boundaries �
 
 3. **Tier runs-per-case to reduce CI cost.** This analysis uses 3 runs per case to stabilise rankings (see [§6.3](#63-non-determinism-confound-3-run-evidence)) — appropriate for diagnostic work, but more than routine CI needs. [Gonzalez et al., 2025](https://arxiv.org/abs/2509.24086) recommend ≥2 repetitions, and standard error barely shifts past 2 runs. Suggested tiering:
 
-   - **1 run for deterministic, non-LLM checks** — length ratios, format validation, entity-overlap checks against the source. No model involved, so verdict stability isn't a concern; failures are exact.
+   - **1 run for deterministic, non-LLM checks** — length ratios, parser/schema validation for the summarizer JSON shape, and entity-overlap checks against the source. For a given output, these checks always return the same verdict; repeated runs only measure whether the model produces a different output.
    - **2 runs with agreement-check-plus-escalation** for binary pass/fail CI gating: pass/pass and fail/fail decide; disagreement triggers a 3rd run or human review.
    - **3 runs** whenever the output is a mean, range, ranking, or instability count (`fails N/3`, `flips N/3`, `wrong N/3`, `wrong N/6`) — diagnostic reports, model comparisons, calibration analysis, and any conclusion that depends on `mean [min–max]`.
 
    Where the 2-run tier applies, it cuts CI runs by up to one-third versus uniform 3-run, and when both runs agree the binary verdict matches a 3-run majority. Two caveats: it preserves the verdict but not the score distribution; and it cannot detect same-side instability — cases that always pass but vary widely, like `negative_sarcasm` SW and `adversarial_markdown_table` SW (see [§6.3](#63-non-determinism-confound-3-run-evidence)).
 
-4. **Do not use WS or WW for CI gating.** WS surfaces llama3.2's failures honestly but has 34/198 assertion failures per 3-run pass; WW masks them (42/198, with the "masking" inflating pass rates on some cases). Both are suitable as **development loops** where speed and cost matter more than ground-truth quality.
+4. **Make parse fallback first-class before the next suite run.** Add parse status to the aggregated run record and report parse failures separately from downstream metrics. CI should continue after a parse fallback, mark the affected case/run failed, and fail the final gate; diagnostic reruns can classify the failure but should not replace the original result.
 
-5. **Known unfixable-at-the-threshold gap**: `judge_unfaithful_magnitude_precision` is a universal miss. Do not raise the threshold to compensate — the score is 1.00, not 0.71. If precision-loss errors matter for a real use case, add a **coverage metric** specifically targeting quantitative and conditional claim preservation.
+5. **Do not use WS or WW for CI gating.** WS surfaces llama3.2's failures honestly but has 34/198 assertion failures per 3-run pass; WW masks them (42/198, with the "masking" inflating pass rates on some cases). Both are suitable as **development loops** where speed and cost matter more than ground-truth quality.
 
-6. **Split-schema sentiment + conflicting** (already in place) works — the strong summarizer achieves 30/30 conflicting accuracy, weak summarizer 21/30, and the failure patterns are interpretable. Do not merge the fields back.
+6. **Known unfixable-at-the-threshold gap**: `judge_unfaithful_magnitude_precision` is a universal miss. Do not raise the threshold to compensate — the score is 1.00, not 0.71. If precision-loss errors matter for a real use case, add a **coverage metric** specifically targeting quantitative and conditional claim preservation.
 
-7. **Convert disputable sentiment labels to analysis-only before the next suite run.** `positive_conflicting_conditional` is a genuine judgment-boundary case: both the asserted `positive` label and Sonnet's `neutral`/`negative` readings are defensible. Remove `expected_sentiment` from that dataset entry so the case still runs, logs, and contributes faithfulness/conflicting-signal evidence without counting a defensible interpretation as a CI failure (see [design-decisions.md](design-decisions.md) item 19).
+7. **Split-schema sentiment + conflicting** (already in place) works — the strong summarizer achieves 30/30 conflicting accuracy, weak summarizer 21/30, and the failure patterns are interpretable. Do not merge the fields back.
 
-8. **Next expansion: cross-family judge experiment** — The practical question is whether Sonnet can serve as its own judge without introducing leniency bias. If it can, SS is the simpler, cheaper production config — Sonnet is already in the stack. The current aggregate data argues against leniency ([§6.1](#61-same-family-judgesummarizer-bias)): Sonnet scores its own summaries *lower* than Mistral on 6/9 divergent normal cases (mean SS 0.94 vs SW 0.96).
+8. **Convert disputable sentiment labels to analysis-only before the next suite run.** `positive_conflicting_conditional` is a genuine judgment-boundary case: both the asserted `positive` label and Sonnet's `neutral`/`negative` readings are defensible. Remove `expected_sentiment` from that dataset entry so the case still runs, logs, and contributes faithfulness/conflicting-signal evidence without counting a defensible interpretation as a CI failure (see [design-decisions.md](design-decisions.md) item 19).
+
+9. **Next expansion: cross-family judge experiment** — The practical question is whether Sonnet can serve as its own judge without introducing leniency bias. If it can, SS is the simpler, cheaper production config — Sonnet is already in the stack. The current aggregate data argues against leniency ([§6.1](#61-same-family-judgesummarizer-bias)): Sonnet scores its own summaries *lower* than Mistral on 6/9 divergent normal cases (mean SS 0.94 vs SW 0.96).
 
    That comparison is not controlled — each run generates fresh summaries, mixing judge calibration and summarizer variance. A controlled test requires generating Sonnet summaries once, storing them as a fixed artifact, and having Sonnet, Mistral, and a third-family judge (OpenAI or Gemini) score that identical input set. If Sonnet scores comparably to the third judge, leniency is not a concern and SS is validated. If it scores consistently higher, the bias is real and a cross-family judge is necessary.
 

@@ -61,7 +61,7 @@ Refer to `.standards/general/`, `.standards/python/`,
 ### Analysis Data
 
 - `reports/aggregated.json` is the canonical data backing `docs/model-configuration-analysis.md`. It is tracked in git. Do not read it directly — run `scripts/model_doc_audit.py` instead to surface specific numbers without flooding the context window. Output includes per-case means with `fails N/3` / `flips N/3` / `wrong N/3` counts, pooled 6-run calibration (`wrong N/6` by judge type), unstable entries, and summary rows. Compare output against doc cells manually — the script dumps canonical values; discrepancies are spotted by eye.
-- Run logs (`reports/*.log`, `reports/archive/`) are gitignored — large and already distilled into `aggregated.json`.
+- Run logs (`reports/*.log`, `reports/archive/`) are gitignored and mostly distilled into `aggregated.json`. Current exception: summarizer JSON parse fallback warnings are not stored as first-class aggregate fields, so any parse-failure count is log-derived until parse metadata is added to future run records.
 
 ### Run Strategy for Config Analysis
 
