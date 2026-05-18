@@ -34,7 +34,7 @@ Four configurations across a 2×2 matrix of summarizer × judge strength:
 
 SW and WS both use one API call per case (summarizer or judge) and one local call — the API leg finishes in seconds, so wall time depends on local hardware (GPU, RAM) and how much work the local model does. SW is consistently slower because the local step is judging (Mistral running two Ragas calls per case); WS is faster because llama3.2 is smaller and only does summarization. First-run latency for Ollama configs includes cold model loading into memory — WS run 1 took ~15 min vs ~5 min once warm. WW is the only fully private config.
 
-> **Note — Ragas `top_p` compatibility:** Ragas 0.4.3's `InstructorModelArgs` hardcodes `top_p=0.1`, which is forwarded to Anthropic and rejected for Claude Sonnet 4.6 and later models. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: [vibrantlabsai/ragas#2674](https://github.com/vibrantlabsai/ragas/issues/2674). This affects all configs that use the Sonnet judge (SS and WS).
+> **Note — Ragas `top_p` compatibility:** Ragas 0.4.3's `InstructorModelArgs` hardcodes `top_p=0.1`, which is forwarded to Anthropic and rejected for Claude Sonnet 4.6 and later models. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue filed by the author: [vibrantlabsai/ragas#2674](https://github.com/vibrantlabsai/ragas/issues/2674). This affects all configs that use the Sonnet judge (SS and WS).
 
 ---
 
