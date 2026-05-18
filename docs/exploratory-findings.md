@@ -105,6 +105,8 @@ This maps loosely onto model tier. Strong models tend to fail through excess: th
 
 The mapping is not perfect — Finding 4 shows that weak models can also fail through excess (following embedded instructions they should treat as content), and the remedy there is also a constraint. The cleaner frame is failure mode, not model tier.
 
+**Before acting on any finding:** confirm the pattern is systematic — ≥3 independent confirming cases from the dataset. Findings that do not yet reach that threshold should be treated as watch-candidates; extend the dataset first, then re-evaluate confidence before committing to a prompt change. Acting on any finding here changes the summarizer prompt and therefore the system under test; re-run the full configuration analysis (all four configs, three runs per case) to confirm the intervention helped and did not introduce regressions.
+
 ## Priority and Next Steps
 
 The candidates above differ in confidence and in what kind of improvement they promise. A reasonable order for a follow-up evaluation cycle:
