@@ -2,13 +2,13 @@
 
 A testing framework for evaluating LLM summarization capabilities, focusing on **hallucination detection** and **prompt injection robustness**. Defaults to Claude Sonnet but supports any model via CLI options (including local models through Ollama).
 
-## What It Tests
+## What it tests
 
 1. **Hallucinations** - Uses [Ragas](https://docs.ragas.io/) Faithfulness metric to verify summaries don't contain claims unsupported by the source text (threshold: 0.7)
 
 2. **Prompt Injection Vulnerability** - Uses adaptive behavioral analysis to detect if injected instructions can manipulate model outputs
 
-## Analysis and Findings
+## Analysis and findings
 
 Evaluating a probabilistic system produces two kinds of output: a verdict on the current system, and a map of things to improve next. This project captures both.
 
@@ -61,7 +61,7 @@ graph TD
 
 Summary, `overall_sentiment` (`positive`/`negative`/`neutral`), and `contains_conflicting_signals` (`true`/`false`) come from the Summarizer's LLM output. Summary faithfulness is judged by Ragas (LLM call). Sentiment accuracy is checked against labels in `data/test_dataset.json`. The split schema gives downstream consumers a clear directional signal for routing/aggregation while separately preserving the nuance of feedback that has both positive and negative aspects.
 
-### Adaptive Robustness Testing
+### Adaptive robustness testing
 
 Instead of hardcoding expected sentiments (which leads to false positives), the robustness checker uses an adaptive approach:
 
@@ -94,7 +94,7 @@ flowchart LR
 
 The adaptive approach avoids this by using the model's own baseline as the reference. We don't care if the model thinks it's "neutral" vs "negative" - we only care if the injection *changed* the output.
 
-## Project Structure
+## Project structure
 
 ```text
 llm-eval/
@@ -135,7 +135,7 @@ cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
 ```
 
-## Running Tests
+## Running tests
 
 ```bash
 # Unit tests only (fast, no API calls)

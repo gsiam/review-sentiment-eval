@@ -1,6 +1,6 @@
-# Exploratory Findings: System-Level Improvement Candidates
+# Exploratory findings: system-level improvement candidates
 
-## Why This Document Exists
+## Why this document exists
 
 Evaluation of probabilistic AI systems produces two outputs. The first is a verdict: given a fixed system under test, how well does each configuration perform against a fixed test suite? That is the [model configuration analysis](model-configuration-analysis.md). The second is a map of improvement candidates — observations that surfaced during the evaluation itself and point to changes in the system, not just recommendations about how to use it.
 
@@ -8,7 +8,7 @@ The second output exists because AI evaluation is intrinsically exploratory. A w
 
 This document captures those observations. Each finding is a hypothesis, not a proven improvement. Acting on any of them changes the system under test, which requires re-running the configuration analysis on the modified system to confirm that the intervention helped and did not introduce new regressions elsewhere.
 
-## Scope and Relation to the Configuration Analysis
+## Scope and relation to the configuration analysis
 
 The [configuration analysis](model-configuration-analysis.md) holds the summarizer prompt and judge prompt fixed and varies the model backends. The findings in this document propose changes to the summarizer prompt, to be tested later with models held fixed. A cross-cutting synthesis section also draws a connection to a judge prompt hypothesis in [§6.3](model-configuration-analysis.md#63-non-determinism-confound-3-run-evidence) of the configuration analysis. The two analyses are complementary:
 
@@ -93,7 +93,7 @@ The strong summarizer resists both. The weak summarizer executes both. The WW co
 
 **Confidence: low. Do not act yet.** A single case is not enough evidence. This pattern should first be tested by adding two to three additional conditional-positive cases to the dataset (reviews where a clear positive final stance follows prominent negative qualifiers) and confirming that the strong summarizer systematically under-labels them. Only if the pattern holds across three or more cases should the intervention be implemented.
 
-## Intervention Asymmetry: Constraints vs Guidance
+## Intervention asymmetry: constraints vs guidance
 
 ![Constraint vs guidance diagram](images/intervention_asymmetry.png)
 
@@ -107,7 +107,7 @@ The mapping is not perfect — Finding 4 shows that weak models can also fail th
 
 **Before acting on any finding:** confirm the pattern is systematic — ≥3 independent confirming cases from the dataset. Findings that do not yet reach that threshold should be treated as watch-candidates; extend the dataset first, then re-evaluate confidence before committing to a prompt change. Acting on any finding here changes the summarizer prompt and therefore the system under test; re-run the full configuration analysis (all four configs, three runs per case) to confirm the intervention helped and did not introduce regressions.
 
-## Priority and Next Steps
+## Priority and next steps
 
 The candidates above differ in confidence and in what kind of improvement they promise. A reasonable order for a follow-up evaluation cycle:
 
@@ -118,7 +118,7 @@ The candidates above differ in confidence and in what kind of improvement they p
 
 Each intervention is a hypothesis. Acting on a finding means: modify the summarizer prompt, re-run the full configuration analysis (all four configs, three runs per case), compare the modified-system results against the baseline captured in the sibling analysis document, and confirm that the targeted failure pattern is resolved without regressions elsewhere.
 
-## A Note on Method
+## A note on method
 
 The findings above emerged from per-case inspection of the evaluation logs, not from a pre-written list of expected failures. That is the exploratory character of this kind of work: the configuration analysis was not designed to discover that WS would beat SS on faithfulness for specific cases, or that Sonnet would never commit to `positive` on a conditional-positive review. Those patterns became visible only once the matrix was run and the per-run outputs were examined.
 

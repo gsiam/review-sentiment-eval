@@ -1,4 +1,4 @@
-# Model Configuration Analysis
+# Model configuration analysis
 
 ## Preamble
 
@@ -21,7 +21,7 @@
 
 ---
 
-## 1. Configurations Tested
+## 1. Configurations tested
 
 Four configurations across a 2×2 matrix of summarizer × judge strength:
 
@@ -38,7 +38,7 @@ SW and WS both use one API call per case (summarizer or judge) and one local cal
 
 ---
 
-## 2. Results Comparison
+## 2. Results comparison
 
 ### 2a. Faithfulness scores — normal cases (threshold ≥ 0.70)
 
@@ -140,7 +140,7 @@ The other four injections (few-shot, JSON, markdown table, system override) are 
 
 ---
 
-## 3. Interesting Failures
+## 3. Interesting failures
 
 ### 3.1 Sarcasm blindness (summarizer quality)
 
@@ -207,7 +207,7 @@ Failed *observations* (test × run) per config, summed across all assertion type
 
 ---
 
-## 4. Threshold Validation
+## 4. Threshold validation
 
 Judge calibration cases use pre-written summaries (no summariser involved), so scores reflect judge behaviour only. Scores are pooled across 6 runs per judge (SS+WS for the strong judge, SW+WW for the weak). `wrong N/6` counts runs where the judge's verdict was incorrect (bold when N ≥ 1). Ranges shown only for unstable entries (`*` = max−min across all 6 runs > 0.2).
 
@@ -256,7 +256,7 @@ Judge calibration cases use pre-written summaries (no summariser involved), so s
 - Unfaithful cases (stable): max 0.60
 - Unfaithful cases including misses: 1.00 → **three universal misses** (wrong **6/6** each)
 
-### Score Distribution vs Threshold
+### Score distribution vs threshold
 
 See Figs. 4a–b for score distributions across faithful and unfaithful calibration cases for the strong and weak judge respectively.
 
@@ -283,7 +283,7 @@ The cases are not sufficient, however, for **quantitative monitoring**: estimati
 
 ---
 
-## 5. Pros and Cons
+## 5. Pros and cons
 
 | Dimension | SS | SW | WS | WW |
 |---|---|---|---|---|
@@ -309,7 +309,7 @@ The cases are not sufficient, however, for **quantitative monitoring**: estimati
 
 ---
 
-## 6. Methodology Risks
+## 6. Methodology risks
 
 **Mitigation status at a glance:** some risks have a practical mitigation now, some only have a proposed follow-up, and some cannot be eliminated with the current metric stack.
 
@@ -475,7 +475,7 @@ That fallback keeps diagnostic runs moving, but it creates an attribution risk: 
 
 ---
 
-## 8. Relation to the Exploratory Findings Document
+## 8. Relation to the exploratory findings document
 
 This analysis treats the summarizer and judge prompts as fixed and varies the model backends. Holding the prompts constant is deliberate — it isolates the configuration axis and keeps this document as a single comparable evaluation.
 
