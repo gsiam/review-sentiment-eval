@@ -34,7 +34,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 > Do not introduce numeric ranges, durations, or directional framings that are not explicitly stated in the source. When the source gives a specific date, do not convert it to a duration. When the source states a fact, do not add qualifiers that imply trend or continuation.
 
-**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See [§6.7](model-configuration-analysis.md#67-faithfulness-can-invert-apparent-summarizer-quality-rankings) of the configuration analysis for a full mechanism discussion.
+**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See [§6.6](model-configuration-analysis.md#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one) of the configuration analysis for a full mechanism discussion.
 
 ### 2. Weak summarizer strips sarcasm and emits literal positive
 
