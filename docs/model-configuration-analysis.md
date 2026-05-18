@@ -34,7 +34,7 @@ Four configurations across a 2×2 matrix of summarizer × judge strength:
 
 SW and WS both use one API call per case (summarizer or judge) and one local call — the API leg finishes in seconds, so wall time depends on local hardware (GPU, RAM) and how much work the local model does. SW is consistently slower because the local step is judging (Mistral running two Ragas calls per case); WS is faster because llama3.2 is smaller and only does summarization. First-run latency for Ollama configs includes cold model loading into memory — WS run 1 took ~15 min vs ~5 min once warm. WW is the only fully private config.
 
-> **Note — Ragas `top_p` compatibility:** Ragas 0.3.6 passes `top_p` to `ChatAnthropic.with_structured_output()`, which rejects it as unsupported. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: [vibrantlabsai/ragas#2674](https://github.com/vibrantlabsai/ragas/issues/2674). This affects all configs that use the Sonnet judge (SS, SW, WS).
+> **Note — Ragas `top_p` compatibility:** Ragas 0.4.3's `InstructorModelArgs` hardcodes `top_p=0.1`, which is forwarded to Anthropic and rejected for Claude Sonnet 4.6 and later models. A project-local workaround (`model_args.pop("top_p", None)`) is applied in `FaithfulnessEvaluator.__init__` and `conftest.py`. Upstream issue: [vibrantlabsai/ragas#2674](https://github.com/vibrantlabsai/ragas/issues/2674). This affects all configs that use the Sonnet judge (SS and WS).
 
 ---
 
@@ -231,7 +231,7 @@ Judge calibration cases use pre-written summaries (no summariser involved), so s
 | judge_unfaithful_spec_simplification | FAIL | 0.50 | ✓ |
 
 - Faithful cases: 3 of 4 at 1.00 (stable); `spec_simplification` unreliable — 0.75 pooled mean, wrong 3/6 (judge rejects faithful summary)
-- Unfaithful cases (stable): max 0.60 → 0.10 gap below threshold
+- Correctly classified stable unfaithful cases top out at 0.60 → 0.10 gap below threshold
 - One universal miss: `magnitude_precision` (wrong **6/6**)
 - `magnitude_severity`: unreliable — scores 0.00 and 1.00 equally across 6 runs (pooled mean 0.50, wrong 3/6)
 
@@ -253,7 +253,7 @@ Judge calibration cases use pre-written summaries (no summariser involved), so s
 | judge_unfaithful_spec_simplification | FAIL | 0.50 | ✓ |
 
 - Faithful cases: all at 1.00 (fully stable — judge never rejects a faithful summary)
-- Unfaithful cases (stable): max 0.60
+- Correctly classified stable unfaithful cases top out at 0.60
 - Unfaithful cases including misses: 1.00 → **three universal misses** (wrong **6/6** each)
 
 ### Score distribution vs threshold
@@ -288,7 +288,7 @@ The cases are not sufficient, however, for **quantitative monitoring**: estimati
 | Dimension | SS | SW | WS | WW |
 |---|---|---|---|---|
 | **Cost (API steps)** | summarizer + judge | summarizer only | judge only | none |
-| **Latency (40 tests)** | ~6 min | ~19 min | 5–15 min | ~15 min |
+| **Latency (34 cases)** | ~6 min | ~19 min | 5–15 min | ~15 min |
 | **Privacy** | Source + summary to Anthropic | Source to Anthropic (summarize); judge local | Source + summary to Anthropic (judge); summarize local | Fully on-device |
 | **Normal faithfulness pass rate** | 48/48 | 47/48 | 44/48 | 45/48 |
 | **Sentiment accuracy** | 45/48 | 45/48 | 42/48 | 42/48 |

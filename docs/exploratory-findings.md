@@ -19,7 +19,7 @@ Each finding below is scoped to a specific failure pattern observed during the c
 
 ## Findings
 
-Each finding documents the observed pattern, the supporting evidence, the proposed prompt intervention, and a confidence level. "Confidence" here is based on how many independent cases in the dataset exhibit the pattern, and whether the pattern has an established basis in the literature. Three or more confirming cases warrant *medium* confidence. One confirming case warrants *low* confidence; *low-medium* applies when the pattern is also consistent with a well-documented model-behaviour characteristic.
+Each finding documents the observed pattern, the supporting evidence, the proposed prompt intervention, and a confidence level. "Confidence" here is based on how many independent cases in the dataset exhibit the pattern, and whether the pattern has an established basis in the literature. Three or more confirming cases warrant *medium* confidence; two cases are sufficient when both show consistent failures across multiple evaluation configurations. One confirming case warrants *low* confidence; *low-medium* applies when the pattern is also consistent with a well-documented model-behaviour characteristic.
 
 ### 1. Strong summarizer over-derives beyond the source
 
@@ -34,7 +34,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 > Do not introduce numeric ranges, durations, or directional framings that are not explicitly stated in the source. When the source gives a specific date, do not convert it to a duration. When the source states a fact, do not add qualifiers that imply trend or continuation.
 
-**Confidence: medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See [§6.6](model-configuration-analysis.md#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one) of the configuration analysis for a full mechanism discussion.
+**Confidence: low-medium.** Two cases exhibit the pattern. Before acting, add one or two more cases targeting derived-claim risk (sources with specific dates where a model might derive a duration, or factual statements a model might trend-ify). See [§6.6](model-configuration-analysis.md#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one) of the configuration analysis for a full mechanism discussion.
 
 ### 2. Weak summarizer strips sarcasm and emits literal positive
 
@@ -105,7 +105,7 @@ This maps loosely onto model tier. Strong models tend to fail through excess: th
 
 The mapping is not perfect — Finding 4 shows that weak models can also fail through excess (following embedded instructions they should treat as content), and the remedy there is also a constraint. The cleaner frame is failure mode, not model tier.
 
-**Before acting on any finding:** confirm the pattern is systematic — ≥3 independent confirming cases from the dataset. Findings that do not yet reach that threshold should be treated as watch-candidates; extend the dataset first, then re-evaluate confidence before committing to a prompt change. Acting on any finding here changes the summarizer prompt and therefore the system under test; re-run the full configuration analysis (all four configs, three runs per case) to confirm the intervention helped and did not introduce regressions.
+**Before acting on any finding:** confirm the pattern is systematic — ≥3 independent confirming cases, or 2 cases with consistent cross-config failures, from the dataset. Findings that do not yet reach that threshold should be treated as watch-candidates; extend the dataset first, then re-evaluate confidence before committing to a prompt change. Acting on any finding here changes the summarizer prompt and therefore the system under test; re-run the full configuration analysis (all four configs, three runs per case) to confirm the intervention helped and did not introduce regressions.
 
 ## Priority and next steps
 
