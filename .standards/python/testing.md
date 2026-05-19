@@ -52,3 +52,22 @@ def test_threshold_boundary(self, evaluator):
     # Then
     assert result.passed is True
 ```
+
+## Loading scripts via importlib
+
+When a test file loads a standalone script via `importlib.util.spec_from_file_location`
+(because the script is not on the Python path), do not use bare `assert` to
+check the spec — it fires as a collection-phase `AssertionError` with no message
+if the path moves. Use `pytest.fail()` with the path for actionable diagnostics:
+
+```python
+spec = importlib.util.spec_from_file_location("my_script", MODULE_PATH)
+if spec is None or spec.loader is None:
+    pytest.fail(f"Could not load {MODULE_PATH}")
+
+module = importlib.util.module_from_spec(spec)
+try:
+    spec.loader.exec_module(module)
+except ImportError as exc:
+    pytest.fail(f"Could not import {MODULE_PATH}: {exc}")
+```

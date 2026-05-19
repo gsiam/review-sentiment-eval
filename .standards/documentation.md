@@ -27,6 +27,12 @@ two structurally distinct outcomes (e.g., universal miss vs run-level instabilit
 the preamble must include a key that distinguishes them. Relying on context to
 disambiguate produces tables that appear consistent but are not.
 
+**Pre-blockquote prose states the principle only** — prose immediately before a
+blockquote group should frame the finding (the *why* or the mechanism).
+Remediation and mitigation detail belong inside the blockquotes. If the blockquotes
+already enumerate the mitigations, don't restate them in the lead-in — it will be
+redundant and should be removed on review.
+
 ## Analysis Document Sections
 
 **Section content must match section name** — a section whose heading names
@@ -103,3 +109,10 @@ Use **British English** throughout documentation (`colour`, `behaviour`,
 term whose code identifier still uses a different spelling — that creates a
 mismatch between docs and code. Update prose only after the rename lands in
 the codebase.
+
+## Headings
+
+**Heading case** — use sentence case for doc headings: first word capitalised,
+all others lower-case. Exception: acronyms, proper nouns, and technical
+identifiers (e.g. LLM, CI, JSON, `top_p`) keep their canonical form regardless
+of position.

@@ -9,7 +9,7 @@ LLM Evaluation Suite for testing summarization capabilities. Defaults to Claude 
 
 Main modules: `summarizer.py` (LLM calls + response parsing), `faithfulness_evaluator.py` (Ragas wrapper), `robustness_checker.py` (injection testing).
 
-Active plan: `~/.claude/plans/llm-eval-model-agnostic.md`
+Plan (all steps complete; Deferred items remain): `~/.claude/plans/llm-eval-model-agnostic.md`
 
 ## How to Run Things
 
@@ -49,7 +49,11 @@ pytest -m integration --log-cli-level=INFO
 Before modifying core modules (`summarizer.py`, `faithfulness_evaluator.py`, `robustness_checker.py`, `logging_callback.py`) or their tests, read `docs/design-decisions.md`.
 For project structure and architecture diagrams, see `README.md`.
 
+`docs/design-decisions.md` items use `##` headings in sentence case — not a numbered list. Anchor links work: `[Item title](docs/design-decisions.md#item-title)`. Do not reintroduce numbers or title case when adding new items.
+
 `docs/design-decisions.md` is for *implemented* decisions only. Pre-implementation or deferred design (e.g., the behavioural canary, third-family judge experiment) lives in the plan's "Deferred / Open Discussion" section or the analysis doc's recommendations; items graduate to `design-decisions.md` only when the corresponding code lands.
+
+The plan's "Deferred / Open Discussion" section is for genuinely open questions only. Before adding an item, confirm there is an actual unresolved question — not a decided constraint already documented in `docs/design-decisions.md` or the analysis doc's recommendations.
 
 ## Standards
 
