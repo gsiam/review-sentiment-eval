@@ -18,7 +18,7 @@ The suite separates the system under test from the evaluators so model output, j
 
 ![Architecture overview](docs/images/architecture.svg)
 
-The system under test is the `Summarizer` component: it prompts a selected LLM to produce a summary plus two structured review signals, `overall_sentiment` and `contains_conflicting_signals`. Faithfulness is judged by [Ragas](https://docs.ragas.io/) (a second LLM call). Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
+The system under test is the `Summarizer` component: it prompts a selected LLM to produce a summary plus two structured review signals, `overall_sentiment` and `contains_conflicting_signals`. Faithfulness is judged with [Ragas](https://docs.ragas.io/) using an LLM-as-a-judge call: a second model checks whether the summary is grounded in the source review. Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
 
 ## Risks and threat model
 
@@ -30,11 +30,11 @@ Two failure modes, framed as trust-boundary problems:
 
 ## Hallucination evaluation
 
-Measures whether the summary's extracted claims are supported by the source review, using an LLM-as-judge approach via Ragas Faithfulness.
+This check measures whether the summary's extracted claims are supported by the source review.
 
 **Threshold (0.70):** justified by calibration data, not intuition. Among the classic-error calibration cases (hallucinated claims, negation flips, attribution swaps, number swaps), unfaithful scores top out at 0.60 and faithful controls score 1.00. The 0.70 cut is an operational boundary inside that gap, calibrated against real summariser output (which scores 0.71–0.90 on graded cases) rather than a universal constant.
 
-**Known blind spot:** The judge cannot detect precision loss — "the product took 3 seconds to respond" softened to "the product was occasionally slow" is still technically supported, so it scores as faithful. Some precision-loss and scope calibration cases confirm this: they score 1.00 despite being unfaithful. No threshold adjustment catches this; a complementary recall-side metric (e.g. `answer_recall`) is required. Flagged as future work.
+**Known blind spot:** The faithfulness judge cannot reliably detect precision loss — "the product took 3 seconds to respond" softened to "the product was occasionally slow" is still technically supported, so it scores as faithful. Some precision-loss and scope calibration cases confirm this: they score 1.00 despite being unfaithful. No threshold adjustment catches this; a complementary recall-side metric (e.g. `answer_recall`) is required. Flagged as future work.
 
 **Non-determinism:** Scores are probabilistic. Results are reported as `mean [min–max]` across 3 runs, with instability flagged when max − min > 0.2. Evaluation outputs are signals, not proofs.
 
@@ -93,7 +93,7 @@ Treating evaluation as research rather than gating means the suite produces sign
 
 ## Applying this today
 
-The **strong-summarizer / strong-judge** configuration (Claude Sonnet for both roles) is recommended for CI based on the four-configuration comparison in the [Model Configuration Analysis](docs/model-configuration-analysis.md).
+The **strong summariser / strong judge** configuration (Claude Sonnet for both roles) is recommended for CI based on the four-configuration comparison in the [Model Configuration Analysis](docs/model-configuration-analysis.md).
 
 Suitable for:
 
@@ -210,7 +210,7 @@ pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-so
 
 ## Dependencies
 
-- `anthropic` — async Anthropic client (used by Ragas judge)
+- `anthropic` — async Anthropic client (used by the Ragas judge)
 - `langchain-anthropic` — Claude API integration (used by Summariser)
 - `ragas` — Faithfulness metric for hallucination detection
 - `pytest` — testing framework
