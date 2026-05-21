@@ -1,4 +1,4 @@
-# LLM review analysis evaluation suite
+# LLM eval suite for customer review analysis
 
 An evaluation suite for an LLM-based review analysis system. The system extracts structured signals from customer reviews — overall sentiment and whether the review contains conflicting signals — for downstream routing and triage. This suite asks: *can the extracted signals be trusted, and can the model be manipulated into producing wrong ones?*
 
