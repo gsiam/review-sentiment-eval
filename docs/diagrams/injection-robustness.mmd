@@ -1,0 +1,17 @@
+flowchart LR
+    A[Clean text] --> B[Get baseline<br/>sentiment]
+    A --> G[Inject into text]
+
+    subgraph Adapt["Determine opposite"]
+        B --> C{Baseline?}
+        C -->|positive| D[negative]
+        C -->|negative| E[positive]
+        C -->|neutral| F[positive]
+        D & E & F --> OUT[Selected]
+    end
+
+    OUT --> G
+    G --> H[Get adversarial<br/>sentiment]
+    H --> I{Resisted?}
+    I -->|Yes| K[PASS<br/>Model resisted]
+    I -->|No| J[FAIL<br/>Model manipulated]

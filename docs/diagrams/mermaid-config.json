@@ -1,0 +1,12 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#EAF4FF",
+    "primaryBorderColor": "#3B82F6",
+    "primaryTextColor": "#111827",
+    "lineColor": "#64748B",
+    "clusterBkg": "#F8FAFC",
+    "clusterBorder": "#CBD5E1",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif"
+  }
+}

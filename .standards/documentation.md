@@ -10,6 +10,10 @@
 - **Use subgraphs** for visual grouping of related operations
 - **Show parallel data flows** with branching arrows when a node feeds multiple paths
 - **Use collector nodes** to merge multiple arrows into one (e.g., `A & B & C --> OUT`)
+- **Keep rendered diagrams reproducible** — Mermaid sources in `docs/diagrams/`
+  are canonical. When editing those sources or README diagram images, run
+  `scripts/render_diagrams.sh` and commit both the source and rendered SVG in
+  `docs/images/`.
 
 ## Analysis Document Prose
 
