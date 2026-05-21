@@ -145,6 +145,17 @@ llm-eval/
 │   ├── test_faithfulness_evaluator_unit.py
 │   ├── test_robustness_checker_unit.py
 │   └── test_logging_callback_unit.py
+├── docs/
+│   ├── diagrams/                  # Mermaid diagram sources + render config
+│   ├── images/                    # Rendered charts and README diagrams
+│   ├── model-configuration-analysis.md
+│   ├── exploratory-findings.md
+│   └── design-decisions.md
+├── scripts/
+│   ├── build_aggregated.py        # Parse run logs into aggregate report data
+│   ├── generate_*.py              # Regenerate analysis charts
+│   ├── model_doc_audit.py         # Audit analysis figures against report data
+│   └── render_diagrams.sh         # Render Mermaid sources to SVG
 └── data/
     └── test_dataset.json          # 16 normal + 6 adversarial + 12 judge-calibration cases
 ```
