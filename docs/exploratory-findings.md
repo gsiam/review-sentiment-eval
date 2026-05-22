@@ -95,7 +95,11 @@ The strong summarizer resists both. The weak summarizer executes both. The WW co
 
 ## Intervention asymmetry: constraints vs guidance
 
-![Constraint vs guidance diagram](images/intervention_asymmetry.png)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="images/intervention_asymmetry.png" alt="Constraint vs guidance diagram" width="600">
+</p>
+<!-- markdownlint-enable MD033 -->
 
 *Fig. 1. Strong models produce a wide range of outputs from a given prompt — the intended output is one of many. A constraint clips that range. Weak models produce a narrow range that may not reach the intended output at all — guidance extends it.*
 
