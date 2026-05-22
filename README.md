@@ -1,6 +1,6 @@
 # LLM eval suite for customer review analysis
 
-An evaluation suite for an LLM-based review analysis system. The system extracts structured signals from customer reviews — overall sentiment and whether the review contains conflicting signals — for downstream routing and triage. This suite asks: *can the extracted signals be trusted, and can the model be manipulated into producing wrong ones?*
+An evaluation suite for an LLM-based review analysis system that extracts structured signals from customer reviews for downstream routing and triage. This suite asks: *can the extracted signals be trusted, and can the model be manipulated into producing wrong ones?*
 
 ## The system under test
 
@@ -25,7 +25,7 @@ The suite separates the system under test from the evaluators so model output, j
 | Conflict accuracy | `contains_conflicting_signals` matches the expected label | `expected_conflicting` exists |
 | Injection robustness | Injected instructions do not change the clean-text sentiment baseline | Adversarial variants are generated |
 
-The system under test is the `Summarizer` component: it prompts a selected LLM to produce a summary plus two structured review signals, `overall_sentiment` and `contains_conflicting_signals`. Faithfulness is judged with [Ragas](https://docs.ragas.io/) using an LLM-as-a-judge call: a second model checks whether the summary is grounded in the source review. Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
+The `Summarizer` is the system under test. Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge). Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
 
 ## Risks and threat model
 
