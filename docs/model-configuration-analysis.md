@@ -489,6 +489,42 @@ The blind-spot form of same-family bias, however, remains a concern regardless o
 
 **Suggested scope**: two phases. Phase 1 — run the third judge on the 12 calibration cases (pre-written summaries with known faithfulness ground truth); Sonnet and Mistral calibration scores already exist from the current data, so this phase adds only the third judge's scores for comparison. Phase 2 — generate and freeze a set of Sonnet summaries for the 22 normal and adversarial cases, then replay Sonnet, Mistral, and the third judge against that fixed artifact to isolate judge calibration from summariser variance.
 
+### 7.9 Expand case coverage by decision point
+
+The current 34-case suite is a targeted diagnostic baseline focused on known hard behaviours. To support production-level confidence, expand it in two directions: add more synthetic cases for known weak spots, and add real-traffic alignment checks that show whether those synthetic cases still reflect the reviews the system sees in practice. Each delivery point should then run the cases that support its decision.
+
+| Delivery point | Case set | Decision it supports |
+|---|---|---|
+| Local development | Small smoke subset | Did prompt, parser, or harness changes break obvious behaviour? |
+| Pull request | PR regression gate | Can this change merge? |
+| Pre-release | Full diagnostic suite | Is the review-analysis system still good enough to release? |
+| Evaluator changes | Judge-calibration bank | Is the evaluator still trustworthy after judge, Ragas, threshold, or metric changes? |
+| Scheduled monitoring | Behavioural drift canary | Did model or provider behaviour shift between releases? |
+| Periodic production review | Real-traffic alignment check | Do the evals still cover the risks and review categories seen in production? |
+
+Practical sizing guidance:
+
+These ranges are **first-pass learning targets**: large enough to test whether each suspected pattern repeats, and small enough to revise the case design or annotation rubric without wasting a large batch of work. Deeper coverage can come after a pattern has proven useful.
+
+- **Current baseline:** 34 targeted diagnostic cases.
+- **PR regression gate:** start with all 34 if cost and noise are acceptable; downselect when cost or noise requires it.
+- **First targeted expansion:** add roughly 20–30 synthetic cases around known weak spots. That is enough to add 2–3 examples for each current prompt-intervention finding while keeping the next suite run small enough to inspect manually.
+- **Coverage-metric pilot:** annotate or add roughly 8–12 key-claim cases. This covers the main precision, severity, scope, and over/under-specification patterns without turning the first recall-side metric test into a large annotation project.
+- **Judge-calibration bank, near term:** expand selectively from the current 12 labelled faithful/unfaithful summaries, prioritising missing failure classes over raw volume.
+- **Judge-calibration bank, later:** if the bank is used for judge-accuracy claims, new-judge selection, or drift detection, scale becomes a statistical-power question. [§4](#calibration-set-size) gives the rough scale for tight accuracy estimates; [§6.7](#67-model-behaviour-drift-between-ci-runs) covers the related sample-size caveat for behavioural-shift warnings.
+- **Behavioural drift canary:** start with boundary and control cases as an early-warning system. Treat it as an investigation trigger; proof-level drift claims require a sample large enough to support statistical claims.
+- **Real-traffic alignment check:** periodically sample real reviews, human-review them, and use the gaps to guide synthetic case expansion and the prompt-intervention work tracked in [exploratory-findings.md](exploratory-findings.md#priority-and-next-steps).
+
+Suggested priority order:
+
+1. Keep the 34 cases as the diagnostic baseline.
+2. Make parse fallback first-class ([§7.4](#74-make-parse-fallback-first-class-before-the-next-suite-run)).
+3. Add the source-to-summary coverage metric ([§7.6](#76-add-a-source-to-summary-coverage-metric)).
+4. Expand known weak spots with 2–3 additional cases each, enough to test whether one-off findings repeat without making the first expansion too large.
+5. Split case sets by delivery decision.
+6. Add a behavioural drift canary ([§6.7](#67-model-behaviour-drift-between-ci-runs)) and real-traffic alignment check once parse-status reporting is first-class and each run records enough metadata to compare against a stored baseline.
+7. Scale calibration and drift datasets once the suite is used for judge-accuracy claims, new-judge selection, or model/provider drift claims.
+
 ---
 
 ## 8. Relation to the exploratory findings document
