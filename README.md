@@ -46,7 +46,7 @@ The robustness check uses the model's clean-text output as its baseline, then ch
 
 ![Injection robustness flow](docs/images/injection-robustness.svg)
 
-1. Run the summarizer on clean text — record baseline output.
+1. Run the summariser on clean text — record baseline output.
 2. Inject an adversarial instruction into the review text; re-run.
 3. **Flip** = the model changed its output from the baseline, regardless of direction.
 
@@ -87,7 +87,7 @@ Test result: PASS — no flip. The model maintained its baseline output despite 
 Evaluating a probabilistic system produces two kinds of output:
 
 - **A verdict** — which model configuration to use in CI, backed by a four-configuration comparison across 34 cases and 3 runs each. Answers: *is the current system trustworthy enough to ship?*
-- **An improvement map** — five prompt-change candidates derived from the evaluation results, each with evidence and a proposed intervention. Answers: *what should change in the next iteration?*
+- **A path to production readiness** — configuration recommendations, methodology improvements, and prompt-change candidates derived from the evaluation results. Answers: *what has to improve before this becomes a production evaluation harness?*
 
 Treating evaluation as research rather than gating means the suite produces signal that improves the system, not only signal that blocks it.
 
@@ -121,20 +121,22 @@ The two analysis documents are complementary: the first holds prompts fixed and 
 - A security certification — robustness failures indicate risk, not compromise.
 - A substitute for per-case human review of borderline outputs.
 
-## Future work
+## Suggested next work
 
-- Complementary recall metric (`answer_recall`) to catch precision and severity-loss cases the faithfulness judge misses.
-- Cross-model comparison with judge diversity — test whether judge disagreements are consistent across judge model families.
-- Confidence intervals across runs beyond min–max (e.g. bootstrap CIs at n ≥ 5 per case).
-- Structured adversarial dataset with known-label injection cases, enabling a direct false-positive rate measurement.
-- Calibration curves for threshold tuning — ROC-based labelling of borderline cases to systematically validate the 0.70 cut.
+The next stage is turning the suite from a diagnostic project into a production-ready evaluation harness: one that measures the behaviours that matter, supports repeatable CI decisions, builds trust in review-routing outcomes, and drives improvements to the review-analysis system itself.
+
+- **[Broaden metric coverage](docs/model-configuration-analysis.md#76-add-a-source-to-summary-coverage-metric):** add a source-to-summary coverage metric (`answer_recall`-style) to catch precision and severity-loss cases the faithfulness judge misses.
+- **[Harden evaluation reporting](docs/model-configuration-analysis.md#74-make-parse-fallback-first-class-before-the-next-suite-run):** make parse fallback a first-class reported metric before the next suite run.
+- **[Refine dataset semantics](docs/model-configuration-analysis.md#77-convert-disputable-sentiment-labels-to-analysis-only-before-the-next-suite-run):** convert disputable sentiment labels to analysis-only so borderline cases inform comparison without creating false failures.
+- **[Validate judge independence](docs/model-configuration-analysis.md#78-next-expansion-cross-family-judge-experiment):** run a controlled cross-family judge experiment with frozen summaries.
+- **[Test prompt interventions](docs/exploratory-findings.md#priority-and-next-steps):** harden the summariser prompt against injected instructions, then re-run the full four-configuration analysis.
 
 ## Project structure
 
 ```text
 llm-eval/
 ├── src/llm_eval/
-│   ├── summarizer.py              # LLM summarization + sentiment + conflict detection
+│   ├── summarizer.py              # LLM summarisation + sentiment + conflict detection
 │   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
 │   ├── robustness_checker.py      # Adaptive injection testing
 │   └── logging_callback.py        # LLM request/response logging
