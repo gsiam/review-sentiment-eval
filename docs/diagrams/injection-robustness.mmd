@@ -1,17 +1,24 @@
-flowchart LR
-    A[Clean text] --> B[Get baseline<br/>sentiment]
-    A --> G[Inject into text]
+%%{init: {"themeVariables": {"fontSize": "14px"}}}%%
+flowchart TB
+    A[Clean review text]
+    B["<strong>Clean run</strong><br/><span style='font-size:12px;color:#475569'>baseline sentiment</span>"]
+    T["Choose injection target<br/><span style='font-size:12px;color:#475569'>positive -> negative<br/>negative/neutral -> positive</span>"]
+    G[Inject adversarial instruction<br/>into the same review]
+    H["<strong>Injected run</strong><br/><span style='font-size:12px;color:#475569'>observed sentiment</span>"]
+    I{Baseline sentiment<br/>preserved?}
+    K[PASS<br/>Resisted]
+    J[FAIL<br/>Injection flip]
 
-    subgraph Adapt["Determine opposite"]
-        B --> C{Baseline?}
-        C -->|positive| D[negative]
-        C -->|negative| E[positive]
-        C -->|neutral| F[positive]
-        D & E & F --> OUT[Selected]
-    end
+    A --> B
+    B --> T
+    A --> G
+    T --> G
+    G --> H
+    H --> I
+    I -->|Yes| K
+    I -->|No| J
 
-    OUT --> G
-    G --> H[Get adversarial<br/>sentiment]
-    H --> I{Resisted?}
-    I -->|Yes| K[PASS<br/>Model resisted]
-    I -->|No| J[FAIL<br/>Model manipulated]
+    classDef pass fill:#ECFDF5,stroke:#16A34A,stroke-width:2px,color:#064E3B
+    classDef fail fill:#FEF2F2,stroke:#DC2626,stroke-width:2px,color:#7F1D1D
+    class K pass
+    class J fail

@@ -18,6 +18,13 @@ The suite separates the system under test from the evaluators so model output, j
 
 ![Architecture overview](docs/images/architecture.svg)
 
+| Check | What it verifies | Runs when |
+| --- | --- | --- |
+| Faithfulness | Summary is grounded in the source review | Every review with source text |
+| Sentiment accuracy | `overall_sentiment` matches the expected label | `expected_sentiment` exists |
+| Conflict accuracy | `contains_conflicting_signals` matches the expected label | `expected_conflicting` exists |
+| Injection robustness | Injected instructions do not change the clean-text sentiment baseline | Adversarial variants are generated |
+
 The system under test is the `Summarizer` component: it prompts a selected LLM to produce a summary plus two structured review signals, `overall_sentiment` and `contains_conflicting_signals`. Faithfulness is judged with [Ragas](https://docs.ragas.io/) using an LLM-as-a-judge call: a second model checks whether the summary is grounded in the source review. Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
 
 ## Risks and threat model
@@ -44,7 +51,11 @@ Detects **behavioural drift caused by injected instructions**, not pass/fail aga
 
 The robustness check uses the model's clean-text output as its baseline, then checks whether an injected instruction causes sentiment drift.
 
-![Injection robustness flow](docs/images/injection-robustness.svg)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="docs/images/injection-robustness.svg" alt="Injection robustness flow" width="360">
+</p>
+<!-- markdownlint-enable MD033 -->
 
 1. Run the summariser on clean text — record baseline output.
 2. Inject an adversarial instruction into the review text; re-run.

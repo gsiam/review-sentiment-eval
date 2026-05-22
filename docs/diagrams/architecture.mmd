@@ -1,41 +1,40 @@
-flowchart LR
-    subgraph "Test data"
+flowchart TB
+    subgraph DATA["Test data"]
         direction TB
         N[Normal reviews]
-        A[Adversarial reviews<br/>clean text + injection template]
-        J[Judge calibration cases<br/>source + pre-written summary]
+        A[Adversarial variants]
+        J[Judge calibration cases]
     end
 
-    subgraph SUT["System under test: review analysis"]
+    subgraph SUT[" "]
         direction TB
         P[Prompt + task rules]
-        M[Summarizer<br/>selected LLM]
-        O[Structured output<br/>summary + sentiment + conflict flag]
+        M[Summarizer<br/>system under test]
+        O[Structured output<br/>summary + signals]
         P --> M --> O
     end
 
-    subgraph "Evaluation checks"
+    subgraph EVAL[" "]
         direction TB
-        F[Faithfulness<br/>summary vs source review]
-        S[Sentiment accuracy<br/>if expected_sentiment exists]
-        C[Conflict accuracy<br/>if expected_conflicting exists]
-        R[Injection robustness<br/>baseline vs injected sentiment]
+        C[Evaluation checks<br/>sentiment, conflict, injection flip]
+        F[Faithfulness judge<br/>Ragas + judge model]
     end
 
-    subgraph "Model endpoints"
-        direction TB
-        API[Provider API<br/>or Ollama]
-        RAGAS[Ragas<br/>judge wrapper]
-    end
+    API[Provider API<br/>or Ollama]
+
+    REPORT[Final evaluation report<br/>scores, failures, instability flags]
 
     N --> P
     A --> P
-    J --> F
-
-    O --> F
-    O --> S
     O --> C
-    O --> R
-    M --> API
-    RAGAS --> API
-    F --> RAGAS
+    O --> F
+    J --> F
+    M -.- API
+    F -.- API
+    C --> REPORT
+    F --> REPORT
+
+    classDef output fill:#ECFDF5,stroke:#16A34A,stroke-width:2px,color:#064E3B
+    classDef dependency fill:#F8FAFC,stroke:#64748B,color:#111827
+    class REPORT output
+    class API dependency
