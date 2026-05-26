@@ -22,22 +22,18 @@ For the organisation, systematic errors look like normal operations. The data dr
 
 ## Architecture overview
 
-The suite separates the system under test from the evaluators so model output, judge scoring, and adversarial probes can be changed independently.
-
 ![Architecture overview](docs/images/architecture.svg)
 
 | Check | What it verifies | Runs when |
 | --- | --- | --- |
-| Faithfulness | Summary is grounded in the source review | Every review with source text |
+| Faithfulness | `summary` is grounded in the source review | Source text exists |
 | Sentiment accuracy | `overall_sentiment` matches the expected label | `expected_sentiment` exists |
 | Conflict accuracy | `contains_conflicting_signals` matches the expected label | `expected_conflicting` exists |
 | Injection robustness | Injected instructions do not change the clean-text sentiment baseline | Adversarial variants are generated |
 
-The `Summarizer` is the system under test. Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge). Sentiment and conflict assertions run only when the dataset provides `expected_sentiment` or `expected_conflicting` labels.
+The `Summarizer` is the system under test. Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge).
 
-## Risks and threat model
-
-Two failure modes, framed as trust-boundary problems:
+## Risks
 
 **Hallucinated signals** — The model asserts a sentiment or fact not supported by the review. A cautiously positive review gets labelled `negative`; a quantitative claim gets softened to a vague qualifier. Downstream: wrong routing, missed escalation, false urgency.
 
