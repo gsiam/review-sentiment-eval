@@ -4,13 +4,21 @@ An evaluation suite for an LLM-based review analysis system that extracts struct
 
 ## The system under test
 
-The system takes a free-text customer review and produces three fields:
+A seller processing hundreds of reviews a day needs a way to understand what customers are saying at scale, so that they can route reviews to the right teams and respond to customers in a timely manner. Extracting structured signals from these reviews can be key to that understanding.
 
-- `overall_sentiment` — the customer's bottom-line verdict (`positive`, `negative`, or `neutral`)
-- `contains_conflicting_signals` — whether the review contains both positive and negative aspects
-- `summary` — a short faithful summary of the review
+The system extracts three fields from each review:
 
-The split schema is deliberate. Routing uses sentiment alone — positive reviews to aggregation, negative to triage. The conflict flag adds a second dimension: a negative review with conflicting signals often means a logistics or delivery complaint, not a product failure — a potentially easy win for the seller. A wrong signal doesn't produce a wrong test result; it produces the wrong downstream action.
+- `overall_sentiment` — the customer's bottom-line verdict (`positive`, `negative`, or `neutral`); this is used to route the review: positive to aggregation, negative to triage
+- `contains_conflicting_signals` — whether the review contains both positive and negative aspects; combined with `overall_sentiment`, it shapes how the complaint is prioritised and handled:
+  - `negative` + conflicting: *"product is great, shipping was awful"* — unhappiness concentrated in one area, often a targeted fix
+  - `positive` + conflicting: *"love the product, but setup was frustrating"* — aggregate sentiment still looks healthy, but friction is building
+  - `neutral` + conflicting: doesn't arise in practice — a review sitting in the middle tends not to carry the mixed-aspect structure that makes the conflict flag meaningful
+
+- `summary` — a short faithful summary, giving the handling agent the core of the complaint at a glance without reading the full review text
+
+If these signals are wrong, the consequences can reach every level. For the handling agent: wrong routing sends the review to the wrong team; a misread conflict flag triggers a response for the wrong problem; an unfaithful summary means the wrong complaint is addressed — the customer feels unheard, and the underlying issue stays unresolved.
+
+For the organisation, systematic errors look like normal operations. The data driving product decisions, support staffing, and quality control silently degrades — the organisation loses sight of what customers are actually saying.
 
 ## Architecture overview
 
