@@ -16,9 +16,13 @@ The system extracts three fields from each review:
 
 - `summary` — a short faithful summary, giving the handling agent the core of the complaint at a glance without reading the full review text
 
-If these signals are wrong, the consequences can reach every level. For the handling agent: wrong routing sends the review to the wrong team; a misread conflict flag triggers a response for the wrong problem; an unfaithful summary means the wrong complaint is addressed — the customer feels unheard, and the underlying issue stays unresolved.
+### What if the signals are wrong?
 
-For the organisation, systematic errors look like normal operations. The data driving product decisions, support staffing, and quality control silently degrades — the organisation loses sight of what customers are actually saying.
+If these signals are wrong, the consequences appear at two levels:
+
+**For the handling agent:** wrong routing sends the review to the wrong team; a misread conflict flag triggers the wrong response; an unfaithful summary addresses the wrong complaint, so the customer feels unheard and the issue stays unresolved.
+
+**For the organisation:** systematic errors look like normal operations. Data driving product decisions, support staffing, and quality control silently degrades, and the organisation loses sight of what customers are actually saying.
 
 ## Architecture overview
 
