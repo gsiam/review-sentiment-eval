@@ -22,7 +22,13 @@ For the organisation, systematic errors look like normal operations. The data dr
 
 ## Architecture overview
 
-![Architecture overview](docs/images/architecture.svg)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="docs/images/architecture.svg" alt="Architecture overview">
+  <br>
+  <em>Fig. 1 — Evaluation pipeline: the Summarizer (system under test) feeds faithfulness and injection robustness checks</em>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 | Check | What it verifies | Runs when |
 | --- | --- | --- |
@@ -31,41 +37,35 @@ For the organisation, systematic errors look like normal operations. The data dr
 | Conflict accuracy | `contains_conflicting_signals` matches the expected label | `expected_conflicting` exists |
 | Injection robustness | Injected instructions do not change the clean-text sentiment baseline | Adversarial variants are generated |
 
-The `Summarizer` is the system under test. Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge).
+The `Summarizer` is the system under test (Fig. 1). Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge).
 
 ## Risks
 
 **Hallucinated signals** — The model asserts a sentiment or fact not supported by the review. A cautiously positive review gets labelled `negative`; a quantitative claim gets softened to a vague qualifier. Downstream: wrong routing, missed escalation, false urgency.
 
-**Prompt injection** — An adversarial instruction embedded in review text overrides the task intent. A review containing embedded instructions causes the model to flip its output regardless of review content. Downstream: trust-boundary violation; an external party can influence how reviews are processed.
+**Prompt injection** — An adversarial instruction embedded in review text overrides the task intent. A review containing embedded instructions causes the model to flip its output regardless of review content. Downstream: an external party can influence how reviews are processed.
 
 ## Hallucination evaluation
 
-This check measures whether the summary's extracted claims are supported by the source review.
+This check measures **whether extracted claims are supported by the source review**.
 
-**Threshold (0.70):** justified by calibration data, not intuition. Among the classic-error calibration cases (hallucinated claims, negation flips, attribution swaps, number swaps), unfaithful scores top out at 0.60 and faithful controls score 1.00. The 0.70 cut is an operational boundary inside that gap, calibrated against real summariser output (which scores 0.71–0.90 on graded cases) rather than a universal constant.
-
-**Known blind spot:** The faithfulness judge cannot reliably detect precision loss — "the product took 3 seconds to respond" softened to "the product was occasionally slow" is still technically supported, so it scores as faithful. Some precision-loss and scope calibration cases confirm this: they score 1.00 despite being unfaithful. No threshold adjustment catches this; a complementary recall-side metric (e.g. `answer_recall`) is required. Flagged as future work.
-
-**Non-determinism:** Scores are probabilistic. Results are reported as `mean [min–max]` across 3 runs, with instability flagged when max − min > 0.2. Evaluation outputs are signals, not proofs.
+**Threshold (0.70):** grounded in calibration data. Among the classic-error calibration cases (hallucinated claims, negation flips, attribution swaps, number swaps), unfaithful scores top out at 0.60 and faithful controls score 1.00. The 0.70 cut is an operational boundary inside that gap, calibrated against real summariser output (which scores 0.71–0.90 on the non-calibration test cases).
 
 ## Prompt injection robustness
 
-Detects **behavioural drift caused by injected instructions**, not pass/fail against a hardcoded label.
-
-The robustness check uses the model's clean-text output as its baseline, then checks whether an injected instruction causes sentiment drift.
+Detects **behavioural drift caused by injected instructions**. This is a score against an *adaptive baseline* rather than a hardcoded expected label: the robustness check uses the model's output on the unmodified review as its baseline, then checks whether an injected instruction causes sentiment drift (Fig. 2).
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <img src="docs/images/injection-robustness.svg" alt="Injection robustness flow" width="360">
+  <br>
+  <em>Fig. 2 — Adaptive baseline: clean-text and adversarial runs are compared; a flip occurs when the injected run diverges</em>
 </p>
 <!-- markdownlint-enable MD033 -->
 
-1. Run the summariser on clean text — record baseline output.
-2. Inject an adversarial instruction into the review text; re-run.
-3. **Flip** = the model changed its output from the baseline, regardless of direction.
+A **flip** occurs when the model changes its output from the baseline, regardless of direction.
 
-**Why adaptive, not hardcoded:** hardcoded expected labels cause false positives when the model's clean-text interpretation legitimately differs from the human label. The test detects manipulation, not disagreement.
+**Why adaptive:** the baseline is the model's own output on the unmodified review, so only injection-caused changes count as failures. A hardcoded label would flag disagreements regardless of cause — conflating robustness failures with accuracy failures.
 
 ## Sample output
 
@@ -122,13 +122,15 @@ Not yet suitable for:
 
 ## Analysis and findings
 
-| Document | Question it answers |
+| Document | Question(s) it answers |
 | --- | --- |
-| [Model Configuration Analysis](docs/model-configuration-analysis.md) | Which model configuration should I use in CI? (4-config comparison, 34 cases — 16 normal + 6 adversarial + 12 calibration — 3 runs each) |
+| [Model Configuration Analysis](docs/model-configuration-analysis.md) | Which model configuration should I use in CI, and where does the evaluation suite fall short? (4-config comparison, 34 cases — 16 normal + 6 adversarial + 12 calibration — 3 runs each; methodology risks and recommendations) |
 | [Exploratory Findings](docs/exploratory-findings.md) | What should the summariser prompt say next? (5 prompt-change candidates with supporting evidence) |
 | [Design Decisions](docs/design-decisions.md) | Why is the evaluation suite built this way? (architectural trade-offs and rationale) |
 
 The two analysis documents are complementary: the first holds prompts fixed and varies models; the second derives prompt-change hypotheses from those results for later fixed-model testing. Together they describe both the current system and the direction of its next iteration.
+
+For methodology limitations of the evaluation suite itself — metric blind spots, judge bias, non-determinism — see [§6 Methodology risks](docs/model-configuration-analysis.md#6-methodology-risks).
 
 ## What this is not
 
