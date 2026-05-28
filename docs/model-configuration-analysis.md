@@ -489,18 +489,27 @@ The blind-spot form of same-family bias, however, remains a concern regardless o
 
 **Suggested scope**: two phases. Phase 1 — run the third judge on the 12 calibration cases (pre-written summaries with known faithfulness ground truth); Sonnet and Mistral calibration scores already exist from the current data, so this phase adds only the third judge's scores for comparison. Phase 2 — generate and freeze a set of Sonnet summaries for the 22 normal and adversarial cases, then replay Sonnet, Mistral, and the third judge against that fixed artifact to isolate judge calibration from summariser variance.
 
-### 7.9 Expand case coverage by decision point
+### 7.9 Expand case coverage by delivery point
 
-The current 34-case suite is a targeted diagnostic baseline focused on known hard behaviours. To support production-level confidence, expand it in two directions: add more synthetic cases for known weak spots, and add real-traffic alignment checks that show whether those synthetic cases still reflect the reviews the system sees in practice. Each delivery point should then run the cases that support its decision.
+The current 34-case suite is a targeted diagnostic baseline focused on known hard behaviours. To support the lifecycle decisions in the table below, expand it in two directions: add more synthetic cases for known weak spots, and add real-traffic alignment checks that show whether those synthetic cases still reflect the reviews the system sees in practice. Each delivery point should then run the cases that support its decision.
 
-| Delivery point | Case set | Decision it supports |
-|---|---|---|
-| Local development | Small smoke subset | Did prompt, parser, or harness changes break obvious behaviour? |
-| Pull request | PR regression gate | Can this change merge? |
-| Pre-release | Full diagnostic suite | Is the review-analysis system still good enough to release? |
-| Evaluator changes | Judge-calibration bank | Is the evaluator still trustworthy after judge, Ragas, threshold, or metric changes? |
-| Scheduled monitoring | Behavioural drift canary | Did model or provider behaviour shift between releases? |
-| Periodic production review | Real-traffic alignment check | Do the evals still cover the risks and review categories seen in production? |
+| Where / when in the pipeline | Which cases get exercised | How the decision is made | What question this row answers |
+|---|---|---|---|
+| Local development | Smoke subset (sanity), or broader subset (directional) | Sanity check / Directional | Did this change break something obvious, and are targeted metrics moving in the right direction? |
+| Pull request | PR regression gate | Baseline delta | Can this change merge without unacceptable regression? |
+| Pre-release | Full diagnostic suite | Absolute threshold | Is the review-analysis system still good enough to release? |
+| Evaluator changes | Judge-calibration bank | Baseline delta | Is the evaluator still trustworthy after judge, Ragas, threshold, or metric changes? |
+| Scheduled monitoring | Behavioural drift canary | Baseline delta | Did model or provider behaviour shift materially between releases? |
+| Periodic production review | Real-traffic alignment check | Qualitative | Do the evals still cover the risks and review categories seen in production? |
+
+Both decision type and case set shape how the metric is read:
+
+- During local iteration, run a fast smoke subset first to confirm nothing obvious broke. For a deeper read, watch per-case deltas and shifts in which cases fail across a broader subset — all compared against the previous baseline. The faithfulness threshold is supporting context here; **direction of movement** matters more than the absolute score. A drop from 0.96 to 0.83 is informative even when both scores still pass. A single run is usually enough for triage at this stage; before treating apparent movement as real, repeat per [§7.3](#73-tier-runs-per-case-to-reduce-ci-cost).
+- The three baseline-delta rows (pull request, evaluator changes, scheduled monitoring) compare each new run against a stored baseline. Ask whether the metric has **moved against you**, and require the answer to repeat across runs or scheduled observations before treating it as evidence.
+- In pre-release, what decides is whether the score **passes the threshold** — currently faithfulness >= 0.70 in this suite. Robustness flip rate should also gate pre-release; a threshold is not yet defined. (See [§2d](#2d-adversarial-results) for the per-case reporting and [README](../README.md#prompt-injection-robustness) for the flip concept.) Direction becomes secondary.
+- For coverage audits the question is **qualitative**: does the case set still represent production risk? When it does not, the answer feeds back into case-set expansion. There is no pass/fail score to read off here.
+
+The thresholds used above should be re-validated when the domain, model family, judge, or metric definition changes.
 
 Practical sizing guidance:
 
@@ -521,9 +530,13 @@ Suggested priority order:
 2. Make parse fallback first-class ([§7.4](#74-make-parse-fallback-first-class-before-the-next-suite-run)).
 3. Add the source-to-summary coverage metric ([§7.6](#76-add-a-source-to-summary-coverage-metric)).
 4. Expand known weak spots with 2–3 additional cases each, enough to test whether one-off findings repeat without making the first expansion too large.
-5. Split case sets by delivery decision.
+5. Define the specific case-set contents for each delivery point in the table above.
 6. Add a behavioural drift canary ([§6.7](#67-model-behaviour-drift-between-ci-runs)) and real-traffic alignment check once parse-status reporting is first-class and each run records enough metadata to compare against a stored baseline.
 7. Scale calibration and drift datasets once the suite is used for judge-accuracy claims, new-judge selection, or model/provider drift claims.
+
+### 7.10 Define a pre-release robustness flip-rate threshold
+
+The pre-release gate in [§7.9](#79-expand-case-coverage-by-delivery-point) sets a faithfulness threshold (≥ 0.70) but leaves robustness ungated. Adversarial results are already reported per case as `flips N/3` ([§2d](#2d-adversarial-results)); what is missing is a policy that converts those counts into a pre-release decision. Reasonable candidates: maximum flip rate across adversarial case-runs, maximum flips per case across runs, or zero flips on a defined critical sub-set. Calibrate the chosen policy against the existing `flips N/3` data in `reports/aggregated.json` so the threshold reflects observed suite behaviour rather than an arbitrary target. See [README](../README.md#prompt-injection-robustness) for the flip concept.
 
 ---
 
