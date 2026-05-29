@@ -43,6 +43,8 @@ If these signals are wrong, the consequences appear at two levels:
 
 The `Summarizer` is the system under test (Fig. 1). Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge).
 
+The 34-case test set was drafted with cross-family LLM seeding — Gemini 3 Pro Preview prompted to extract challenging examples from published faithfulness benchmarks ([FIB](https://arxiv.org/abs/2211.08412) — factual inconsistency in news summarisation; [USB](https://arxiv.org/abs/2305.14296) — a unified summarisation benchmark across tasks and domains; aspect-based review corpora (Amazon/Yelp)) and then manually reviewed before inclusion. This is a deliberate methodology choice: cases anchored to external benchmarks are less likely to inherit Claude-family blind spots than cases drafted end-to-end with the same model family used in the suite. See [§6.2 Case designer bias](docs/model-configuration-analysis.md#62-case-designer-bias) for the full rationale.
+
 ## Risks
 
 **Hallucinated signals** — The model asserts a sentiment or fact not supported by the review. A cautiously positive review gets labelled `negative`; a quantitative claim gets softened to a vague qualifier. Downstream: wrong routing, missed escalation, false urgency.
@@ -161,7 +163,8 @@ The next stage is turning the suite from a diagnostic project into a production-
 - **[Broaden metric coverage](docs/model-configuration-analysis.md#76-add-a-source-to-summary-coverage-metric):** add a source-to-summary coverage metric (`answer_recall`-style) to catch precision and severity-loss cases the faithfulness judge misses.
 - **[Harden evaluation reporting](docs/model-configuration-analysis.md#74-make-parse-fallback-first-class-before-the-next-suite-run):** make parse fallback a first-class reported metric before the next suite run.
 - **[Refine dataset semantics](docs/model-configuration-analysis.md#77-convert-disputable-sentiment-labels-to-analysis-only-before-the-next-suite-run):** convert disputable sentiment labels to analysis-only so borderline cases inform comparison without creating false failures.
-- **[Expand case coverage by delivery point](docs/model-configuration-analysis.md#79-expand-case-coverage-by-delivery-point):** grow the case pool while keeping local smoke, PR regression, full diagnostic, judge-calibration, drift-canary, and real-traffic alignment case sets separate.
+- **[Expand case coverage by delivery point](docs/model-configuration-analysis.md#79-expand-case-coverage-by-delivery-point):** grow the case pool while keeping local smoke, PR regression, full diagnostic, judge-calibration, and drift-canary case sets separate.
+- **[Validate against production-like reviews](docs/model-configuration-analysis.md#711-run-open-coding-on-production-like-reviews):** the current cases are benchmark-grounded synthetic — strong on known failure modes but blind to ones the benchmarks don't enumerate. Sample 50–100 production-like reviews, open-code them, and feed novel failure modes back into the case set.
 - **[Set robustness gate](docs/model-configuration-analysis.md#710-define-a-pre-release-robustness-flip-rate-threshold):** define a pre-release flip-rate threshold so robustness has a published pass/fail policy alongside faithfulness.
 - **[Validate judge independence](docs/model-configuration-analysis.md#78-next-expansion-cross-family-judge-experiment):** run a controlled cross-family judge experiment with frozen summaries.
 - **[Test prompt interventions](docs/exploratory-findings.md#priority-and-next-steps):** harden the summariser prompt against injected instructions, then re-run the full four-configuration analysis.

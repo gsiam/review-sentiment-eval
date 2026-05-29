@@ -538,6 +538,10 @@ Suggested priority order:
 
 The pre-release gate in [§7.9](#79-expand-case-coverage-by-delivery-point) sets a faithfulness threshold (≥ 0.70) but leaves robustness ungated. Adversarial results are already reported per case as `flips N/3` ([§2d](#2d-adversarial-results)); what is missing is a policy that converts those counts into a pre-release decision. Reasonable candidates: maximum flip rate across adversarial case-runs, maximum flips per case across runs, or zero flips on a defined critical sub-set. Calibrate the chosen policy against the existing `flips N/3` data in `reports/aggregated.json` so the threshold reflects observed suite behaviour rather than an arbitrary target. See [README](../README.md#prompt-injection-robustness) for the flip concept.
 
+### 7.11 Run open coding on production-like reviews
+
+The benchmark-grounded synthetic cases cover known failure modes — contradiction handling, noise filtering, aspect-opinion mapping, sarcasm, and precision loss. Failure modes outside the benchmarks' scope require a different input: sample 50–100 real or production-like reviews and open-code them — read each one and write free-form notes about what the model gets wrong, without a predetermined taxonomy. Then group the notes into failure categories and feed novel ones back into the case set and the prompt-intervention candidates in [exploratory-findings.md](exploratory-findings.md). For each novel failure category found, write 2–3 synthetic cases that isolate the pattern (following the sizing guidance in [§7.9](#79-expand-case-coverage-by-delivery-point)) rather than using the real reviews directly.
+
 ---
 
 ## 8. Relation to the exploratory findings document
