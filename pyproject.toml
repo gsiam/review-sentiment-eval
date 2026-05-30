@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "llm-eval"
+name = "review-sentiment-eval"
 version = "0.1.0"
-description = "LLM Evaluation Suite for testing summarization capabilities"
+description = "Evaluation suite for LLM-based customer review sentiment analysis"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

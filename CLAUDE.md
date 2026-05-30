@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LLM Evaluation Suite for testing summarization capabilities. Defaults to Claude Sonnet but supports injecting alternative LLMs. The project evaluates:
+Evaluation suite for LLM-based customer review sentiment analysis. Defaults to Claude Sonnet but supports injecting alternative LLMs. The project evaluates:
 
 1. **Hallucinations** - Using Ragas Faithfulness metric (threshold 0.7)
 2. **Prompt Injection Vulnerability** - Using adaptive behavioral analysis that compares baseline vs adversarial outputs
@@ -15,7 +15,7 @@ Plan (all steps complete; Deferred items remain): `~/.claude/plans/llm-eval-mode
 
 ```bash
 # Setup
-cd llm-eval
+cd review-sentiment-eval
 python3.10 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"   # includes ruff, mypy, pytest-cov
