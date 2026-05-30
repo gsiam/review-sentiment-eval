@@ -43,7 +43,7 @@ If these signals are wrong, the consequences appear at two levels:
 
 The `Summarizer` is the system under test (Fig. 1). Faithfulness is judged with [Ragas](https://docs.ragas.io/) (LLM-as-a-judge).
 
-The 34-case test set was drafted with cross-family LLM seeding — Gemini 3 Pro Preview prompted to extract challenging examples from published faithfulness benchmarks ([FIB](https://arxiv.org/abs/2211.08412) — factual inconsistency in news summarisation; [USB](https://arxiv.org/abs/2305.14296) — a unified summarisation benchmark across tasks and domains; aspect-based review corpora (Amazon/Yelp)) and then manually reviewed before inclusion. This is a deliberate methodology choice: cases anchored to external benchmarks are less likely to inherit Claude-family blind spots than cases drafted end-to-end with the same model family used in the suite. See [§6.2 Case designer bias](docs/model-configuration-analysis.md#62-case-designer-bias) for the full rationale.
+The 34-case test set was drafted with cross-family LLM seeding — Gemini 3 Pro Preview prompted to extract challenging examples from published faithfulness benchmarks ([FIB](https://arxiv.org/abs/2211.08412) — factual inconsistency in news summarisation; [USB](https://arxiv.org/abs/2305.14296) — a unified summarisation benchmark across tasks and domains; aspect-based review corpora (Amazon/Yelp)) and then manually reviewed before inclusion. Cases anchored to external benchmarks are less likely to inherit Claude-family blind spots than cases drafted end-to-end with the same model family. See [§6.2 Case designer bias](docs/model-configuration-analysis.md#62-case-designer-bias) for the full rationale.
 
 ## Risks
 
@@ -55,7 +55,7 @@ The 34-case test set was drafted with cross-family LLM seeding — Gemini 3 Pro 
 
 This check measures **whether extracted claims are supported by the source review**.
 
-**Threshold (0.70):** grounded in calibration data. Among the classic-error calibration cases (hallucinated claims, negation flips, attribution swaps, number swaps), unfaithful scores top out at 0.60 and faithful controls score 1.00. The 0.70 cut is an operational boundary inside that gap, calibrated against real summariser output (which scores 0.71–0.90 on the non-calibration test cases).
+**Threshold (0.70):** grounded in calibration data. Classic-error unfaithful cases top out at 0.60; faithful cases bottom out at 0.75; 0.70 sits inside that gap. Calibrated against real summariser output (which scores 0.71–0.90 on the non-calibration test cases).
 
 ## Prompt injection robustness
 
@@ -119,23 +119,22 @@ Test result: PASS — no flip. Both runs produced the same output; the injected 
 
 Here, evaluation means diagnosis: using test results to understand reliability, expose failure modes, and decide what should change next. This work produced two outputs:
 
-- **A verdict** — which model configuration to use in CI, backed by a four-configuration comparison across 34 cases and 3 runs each. Answers: *which summariser/judge configuration should run in CI?*
-- **A path to production readiness** — configuration recommendations, methodology improvements, and prompt-change candidates derived from the evaluation results. Answers: *what has to improve before this becomes a production evaluation harness?*
+- **A verdict** — which model configuration to use for CI gating, and how that changes when API cost is the constraint.
+- **A path to production readiness** — configuration recommendations, methodology improvements, and prompt-change candidates derived from the evaluation results. Answers: *what has to improve before this becomes a production evaluation suite?*
 
 ## Applying this today
 
-The **strong summariser / strong judge** configuration (`claude-sonnet-4-6` for both roles) is recommended for CI based on the four-configuration comparison in the [Model configuration analysis](docs/model-configuration-analysis.md).
+The **strong summariser / strong judge** configuration (`claude-sonnet-4-6` for both roles) is recommended for CI gating. If API cost is the primary constraint, **strong summariser / weak judge** (Sonnet + local Mistral) reduces cost but is not acceptable as the sole CI config — it misses `judge_unfaithful_scope_condition` wrong 3/3. See [§7.2](docs/model-configuration-analysis.md#72-cost-reduced-ci-alternative-strongweak).
 
 Suitable for:
 
 - ✅ Catching regressions on the current 34-case dataset (CI gate)
-- ✅ Checking the current prompt-injection cases before shipping prompt changes
-- ✅ Running controlled comparisons for prompt/model experiments
+- ✅ Comparing summariser/judge model configurations on a fixed dataset
 
 Not yet suitable for:
 
 - ⚠️ Estimating accuracy on real customer reviews
-- ⚠️ Reusing the 0.70 threshold across domains without re-calibration
+- ⚠️ Assuming the 0.70 threshold transfers to a different domain or model pair without re-calibration
 - ⚠️ General prompt-injection security certification
 
 ## Analysis and findings
@@ -150,15 +149,11 @@ The two analysis documents are complementary: the first holds prompts fixed and 
 
 For methodology limitations of the evaluation suite itself — metric blind spots, judge bias, non-determinism — see [§6 Methodology risks](docs/model-configuration-analysis.md#6-methodology-risks).
 
-## What this is not
-
-- A benchmark or leaderboard for comparing models publicly.
-- A security certification — robustness failures indicate risk, not compromise.
-- A substitute for per-case human review of borderline outputs.
+This suite provides targeted diagnostics; model comparisons show which way performance is moving on this dataset, and borderline cases still require human review.
 
 ## Suggested next work
 
-The next stage is turning the suite from a diagnostic project into a production-ready evaluation harness: one that measures the behaviours that matter, supports repeatable CI decisions, builds trust in review-routing outcomes, and drives improvements to the review-analysis system itself.
+The next stage is turning the suite from a diagnostic project into a production-ready evaluation suite: one that measures the behaviours that matter, supports repeatable CI decisions, builds trust in review-routing outcomes, and drives improvements to the review-analysis system itself.
 
 - **[Broaden metric coverage](docs/model-configuration-analysis.md#76-add-a-source-to-summary-coverage-metric):** add a source-to-summary coverage metric (`answer_recall`-style) to catch precision and severity-loss cases the faithfulness judge misses.
 - **[Harden evaluation reporting](docs/model-configuration-analysis.md#74-make-parse-fallback-first-class-before-the-next-suite-run):** make parse fallback a first-class reported metric before the next suite run.
@@ -171,34 +166,21 @@ The next stage is turning the suite from a diagnostic project into a production-
 
 ## Project structure
 
-```text
-llm-eval/
-├── src/llm_eval/
-│   ├── summarizer.py              # LLM summarisation + sentiment + conflict detection
-│   ├── faithfulness_evaluator.py  # Ragas Faithfulness wrapper
-│   ├── robustness_checker.py      # Adaptive injection testing
-│   └── logging_callback.py        # LLM request/response logging
-├── tests/
-│   ├── conftest.py                # Fixtures, parametrization, model selection CLI
-│   ├── test_summarization.py      # Integration tests (real API)
-│   ├── test_summarizer_unit.py
-│   ├── test_faithfulness_evaluator_unit.py
-│   ├── test_robustness_checker_unit.py
-│   └── test_logging_callback_unit.py
-├── docs/
-│   ├── diagrams/                  # Mermaid diagram sources + render config
-│   ├── images/                    # Rendered charts and README diagrams
-│   ├── model-configuration-analysis.md
-│   ├── exploratory-findings.md
-│   └── design-decisions.md
-├── scripts/
-│   ├── build_aggregated.py        # Parse run logs into aggregate report data
-│   ├── generate_*.py              # Regenerate analysis charts
-│   ├── model_doc_audit.py         # Audit analysis figures against report data
-│   └── render_diagrams.sh         # Render Mermaid sources to SVG
-└── data/
-    └── test_dataset.json          # 16 normal + 6 adversarial + 12 judge-calibration cases
-```
+The core logic lives in `src/llm_eval/`:
+
+| Module | Responsibility |
+| --- | --- |
+| `summarizer.py` | LLM summarisation + sentiment + conflict detection (the system under test) |
+| `faithfulness_evaluator.py` | Ragas Faithfulness wrapper |
+| `robustness_checker.py` | Adaptive injection testing |
+| `logging_callback.py` | LLM request/response logging |
+
+Supporting directories:
+
+- `tests/` — unit tests per module plus integration tests against real LLM backends; `conftest.py` holds fixtures and the model-selection CLI.
+- `docs/` — the three analysis documents, Mermaid diagram sources (`diagrams/`), and rendered charts (`images/`).
+- `scripts/` — log aggregation, chart and diagram regeneration, and the analysis-doc audit.
+- `data/` — `test_dataset.json`: 16 normal + 6 adversarial + 12 judge-calibration cases.
 
 ## Setup
 
@@ -244,6 +226,7 @@ pytest -m adversarial
 pytest -m integration --log-cli-level=INFO
 
 # Model selection (integration tests)
+# Remote API calls support Anthropic models only; use ollama/<model> for local inference via Ollama.
 pytest -m integration --summarizer-model ollama/llama3.2 --judge-model ollama/mistral
 pytest -m integration --summarizer-model ollama/llama3.2 --judge-model claude-sonnet-4-6
 ```
