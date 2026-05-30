@@ -487,7 +487,7 @@ With frozen inputs, the experiment would also answer three specific questions th
 
 The blind-spot form of same-family bias, however, remains a concern regardless of the leniency result. It is untestable by faithfulness alone — shared training could cause both summariser and judge to treat the same omission as unimportant, with no low scores as evidence. This experiment cannot resolve it; the fix is the coverage metric in [§7.6](#76-add-a-source-to-summary-coverage-metric).
 
-**Suggested scope**: two phases. Phase 1 — run the third judge on the 12 calibration cases (pre-written summaries with known faithfulness ground truth); Sonnet and Mistral calibration scores already exist from the current data, so this phase adds only the third judge's scores for comparison. Phase 2 — generate and freeze a set of Sonnet summaries for the 22 normal and adversarial cases, then replay Sonnet, Mistral, and the third judge against that fixed artifact to isolate judge calibration from summariser variance.
+**Suggested scope**: two phases. *Phase 1* — run the third judge on the 12 calibration cases (pre-written summaries with known faithfulness ground truth); Sonnet and Mistral calibration scores already exist from the current data, so this phase adds only the third judge's scores for comparison. *Phase 2* — generate and freeze a set of Sonnet summaries for the 22 normal and adversarial cases, then replay Sonnet, Mistral, and the third judge against that fixed artifact to isolate judge calibration from summariser variance.
 
 ### 7.9 Expand case coverage by delivery point
 
