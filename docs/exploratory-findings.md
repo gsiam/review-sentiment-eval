@@ -2,11 +2,11 @@
 
 ## Why this document exists
 
-Evaluation of probabilistic AI systems produces two outputs. The first is a verdict: given a fixed system under test, how well does each configuration perform against a fixed test suite? That is the [model configuration analysis](model-configuration-analysis.md). The second is a map of improvement candidates — observations that surfaced during the evaluation itself and point to changes in the system, not just recommendations about how to use it.
+Evaluation of probabilistic AI systems produces two outputs. The first is a verdict: given a fixed system under test, how well does each configuration perform against a fixed test suite? That is the [model configuration analysis](model-configuration-analysis.md). The second is a map of improvement candidates — observations that surfaced during the evaluation itself and point to system changes.
 
-The second output exists because AI evaluation is intrinsically exploratory. A well-formed test for a deterministic application asserts a specific expected output against a specific input; when the test and its assertions are trusted, a failure points to a defect in the implementation. The relationship is tight because the inputs, outputs, and expectations are all fixed. AI systems are not deterministic, and their failure modes are not enumerable in advance. Running the evaluation is itself a probing exercise: per-run variance, cross-config differences, and the patterns visible only in the per-case logs all surface information that a pass/fail test design cannot name up front. Some of those observations are actionable as system changes — typically prompt edits — rather than as changes to the test harness or the model selection.
+The second output exists because AI evaluation is intrinsically exploratory. A well-formed test for a deterministic application asserts a specific expected output against a specific input; when the test and its assertions are trusted, a failure points to a defect in the implementation. The relationship is tight because the inputs, outputs, and expectations are all fixed. AI systems are not deterministic, and their failure modes are not enumerable in advance. Running the evaluation is itself a probing exercise: per-run variance, cross-config differences, and the patterns visible only in the per-case logs all yield information that a pass/fail test design cannot name up front. Some of those observations are actionable as system changes — typically prompt edits — rather than as changes to the test harness or the model selection.
 
-This document captures those observations. Each finding is a hypothesis, not a proven improvement. Acting on any of them changes the system under test, which requires re-running the configuration analysis on the modified system to confirm that the intervention helped and did not introduce new regressions elsewhere.
+This document captures those observations. Each finding is an unproven hypothesis: acting on any of them changes the system under test, which requires re-running the configuration analysis on the modified system to confirm that the intervention helped and did not introduce new regressions elsewhere.
 
 ## Scope and relation to the configuration analysis
 
@@ -56,7 +56,7 @@ Each finding documents the observed pattern, the supporting evidence, the propos
 
 **Evidence.** One case:
 
-- `negative_conflicting_logistics` — a review that praises the product's specifications while stating "won't order again" as the closing line. WS labels the sentiment positive 3/3, missing the final stance. WW does the same; the weak judge does not surface the error.
+- `negative_conflicting_logistics` — a review that praises the product's specifications while stating "won't order again" as the closing line. WS labels the sentiment positive 3/3, missing the final stance. WW does the same; the weak judge does not flag the error.
 
 **Proposed intervention.** Add a tie-breaker rule to the summarizer system prompt:
 
@@ -107,7 +107,7 @@ Across the findings, an asymmetry emerges in what kind of prompt change is appro
 
 This maps loosely onto model tier. Strong models tend to fail through excess: their capacity to reason and infer means they can generalise vague guidance in unexpected directions. A vague instruction to "be careful about unsupported claims" risks worsening over-derivation rather than curing it. A narrow constraint that says exactly what is off-limits is safer precisely because it is rigid — it leaves no room for the model to interpret the spirit of the rule and overshoot. Weak models tend to fail through deficit and benefit from guidance because their under-capability provides its own bound on how far things can go wrong; they follow the rule narrowly rather than generalising it.
 
-The mapping is not perfect — Finding 4 shows that weak models can also fail through excess (following embedded instructions they should treat as content), and the remedy there is also a constraint. The cleaner frame is failure mode, not model tier.
+This mapping is not perfect, however — Finding 4 shows that weak models can also fail through excess (following embedded instructions they should treat as content), and the remedy there is also a constraint. The cleaner frame is failure mode rather than model tier.
 
 **Before acting on any finding:** confirm the pattern is systematic — ≥3 independent confirming cases, or 2 cases with consistent cross-config failures, from the dataset. Findings that do not yet reach that threshold should be treated as watch-candidates; extend the dataset first, then re-evaluate confidence before committing to a prompt change. Acting on any finding here changes the summarizer prompt and therefore the system under test; re-run the full configuration analysis (all four configs, three runs per case) to confirm the intervention helped and did not introduce regressions.
 
@@ -124,7 +124,7 @@ Each intervention is a hypothesis. Acting on a finding means: modify the summari
 
 ## A note on method
 
-The findings above emerged from per-case inspection of the evaluation logs, not from a pre-written list of expected failures. That is the exploratory character of this kind of work: the configuration analysis was not designed to discover that WS would beat SS on faithfulness for specific cases, or that Sonnet would never commit to `positive` on a conditional-positive review. Those patterns became visible only once the matrix was run and the per-run outputs were examined.
+The findings above emerged from per-case inspection of the evaluation logs — the unknown unknowns you catch only by reading the runs. That is the exploratory character of this kind of work: the configuration analysis was not designed to discover that WS would beat SS on faithfulness for specific cases, or that Sonnet would never commit to `positive` on a conditional-positive review. Those patterns became visible only once the matrix was run and the per-run outputs were examined.
 
 For Finding 1, no existing pass/fail assertion catches the pattern — the faithfulness gate passes (SS mean 0.76 and 0.86 on the two cases), so a gate-only methodology would record both as passing and move on. For Findings 2–5, existing assertions do surface failures, but each finding goes further: exploratory inspection converts a verdict (the test failed) into an intervention hypothesis (change the prompt in this specific way).
 

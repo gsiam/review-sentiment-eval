@@ -51,7 +51,7 @@ Both `Summarizer` and `FaithfulnessEvaluator` accept an optional keyword-only `l
 
 ## LLM logging
 
-Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls — logs model name at INFO, full messages at DEBUG. `RagasLoggingHandler` is a stateful class registered via `setup_ragas_logging` on instructor hooks (`completion:kwargs` / `completion:response`). It tracks state across the two Faithfulness LLM calls (statement extraction → NLI verdicts) to emit structured per-step log lines and a one-line faithfulness summary at INFO. Raw responses go to DEBUG. Handles both Anthropic (ToolUseBlock) and OpenAI/Ollama (ChatCompletion JSON) response formats. Logging is composed externally by the caller, not embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
+Two separate mechanisms because LangChain and Ragas use different LLM abstractions. `LLMLoggingCallback` (LangChain `BaseCallbackHandler`) handles Summarizer calls — logs model name at INFO, full messages at DEBUG. `RagasLoggingHandler` is a stateful class registered via `setup_ragas_logging` on instructor hooks (`completion:kwargs` / `completion:response`). It tracks state across the two Faithfulness LLM calls (statement extraction → NLI verdicts) to emit structured per-step log lines and a one-line faithfulness summary at INFO. Raw responses go to DEBUG. Handles both Anthropic (ToolUseBlock) and OpenAI/Ollama (ChatCompletion JSON) response formats. Logging is composed externally by the caller rather than embedded in the core classes. Visible with `pytest --log-cli-level=INFO`.
 
 ## Split sentiment schema
 
@@ -79,7 +79,7 @@ For data visualisations (charts with numeric data), use matplotlib PNG — not M
 
 ## Dataset case ID naming
 
-Case IDs are descriptive, not sequential (e.g., `negative_sarcasm`, `positive_conflicting_conditional`). Descriptive names are self-documenting in test output, log lines, and analysis tables. Do not use `_001`-style suffixes as the primary differentiator — they degrade into opaque numbers as the dataset grows.
+Case IDs are descriptive rather than sequential (e.g., `negative_sarcasm`, `positive_conflicting_conditional`). Descriptive names are self-documenting in test output, log lines, and analysis tables. Do not use `_001`-style suffixes as the primary differentiator — they degrade into opaque numbers as the dataset grows.
 
 ## Calibration table pooling
 
