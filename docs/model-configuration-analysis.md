@@ -401,7 +401,7 @@ Several normal cases show **WS scoring higher than SS** under the same Sonnet ju
 The `negative_timeline_shipping` run-1 logs make the mechanism concrete. The source text states: *"Placed the order on March 1st. The estimated delivery was March 5th."* Two SS statements failed:
 
 - **"The estimated delivery window for the customer's order was 5 days."** The source gives a specific date (March 5th), not a duration. The model derived a number-of-days figure that isn't in the source, and reframed a point estimate as a range ("window" implies a multi-day band, not a fixed arrival date). Both the number and the framing are hallucinated.
-- **"The customer has been waiting over 14 days for a refund."** The source says the refund has not arrived *after* 14 days. "Over 14 days" adds a directional embellishment — implying the wait is ongoing and beyond 14 — that isn't stated.
+- **"The customer has been waiting over 14 days for a refund."** The source says the refund *"still hasn't appeared after 14 days."* The word "still" already signals an ongoing wait, so "has been waiting" is a fair read. The problem is the word "over": the source pins the elapsed time at 14 days; "over 14 days" asserts more than 14 have passed — a quantity the source never gives.
 
 The WS summary, on the other hand, decomposed into 6 statements, all faithful. The weak model paraphrased the source literally: "placed an order on March 1st", "nearly three weeks to arrive", "refund has not appeared after 14 days". No derivations, no embellishments, no extra specificity.
 
