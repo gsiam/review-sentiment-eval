@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Good metric, narrow oracle — the interactive data</title>
+  <meta name="description"
+    content="Interactive walkthrough of a counterintuitive LLM evaluation result: a faithfulness metric correctly scoring a weaker summariser above a stronger one. Real data, 34 cases, 4 model configurations, 3 runs each.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --paper: #F3F6F4;
+      --ink: #17201C;
+      --muted: #5C6963;
+      --grid: #D7DEDA;
+      --panel: #FCFDFC;
+      --signal: #0E7C66;
+      --signal-soft: #DCEEE9;
+      --warn: #B4530A;
+      --warn-soft: #F6E4D5;
+      --info-soft: #D8E3EF;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
+      --sans: 'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      html {
+        scroll-behavior: auto
+      }
+
+      * {
+        transition: none !important;
+        animation: none !important
+      }
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.55;
+      background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 56px 56px;
+      background-position: -1px -1px
+    }
+
+    a {
+      color: var(--signal);
+      text-decoration: none;
+      border-bottom: 1px solid var(--signal)
+    }
+
+    a:hover {
+      border-bottom-width: 2px
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    tr[tabindex]:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 2px
+    }
+
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px
+    }
+
+    header.top {
+      border-bottom: 1px solid var(--ink);
+      background: var(--paper)
+    }
+
+    header.top .wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 14px;
+      padding-bottom: 14px;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .04em;
+      color: var(--muted)
+    }
+
+    .eyebrow b {
+      color: var(--ink);
+      font-weight: 600
+    }
+
+    /* hero */
+    .hero {
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--ink)
+    }
+
+    .hero h1 {
+      font-size: clamp(26px, 4.4vw, 40px);
+      font-weight: 600;
+      line-height: 1.18;
+      max-width: 21em
+    }
+
+    .hero .sub {
+      margin-top: 14px;
+      color: var(--muted);
+      max-width: 38em
+    }
+
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--grid)
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px
+    }
+
+    .kicker {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--signal);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 8px
+    }
+
+    p {
+      max-width: 42em
+    }
+
+    p+p {
+      margin-top: 14px
+    }
+
+    /* walkthrough */
+    .doc {
+      background: var(--panel);
+      border: 1px solid var(--ink);
+      padding: 22px 24px;
+      margin-top: 22px;
+      max-width: 760px
+    }
+
+    .doc .lbl {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px
+    }
+
+    .doc .body {
+      font-size: 16px
+    }
+
+    .stmt {
+      border: 1px solid var(--grid);
+      border-left: 4px solid var(--warn);
+      background: var(--panel);
+      padding: 16px 20px;
+      margin-top: 16px;
+      max-width: 760px
+    }
+
+    .stmt.ok {
+      border-left-color: var(--signal)
+    }
+
+    .stmt .claim {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500
+    }
+
+    .stmt .why {
+      margin-top: 8px;
+      font-size: 15px;
+      color: var(--muted)
+    }
+
+    .stmt .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+      background: var(--warn-soft);
+      color: var(--warn)
+    }
+
+    .stmt.ok .tag {
+      background: var(--signal-soft);
+      color: var(--signal)
+    }
+
+    mark {
+      background: var(--info-soft);
+      color: inherit;
+      padding: 0 2px
+    }
+
+    .doc-note {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+      max-width: 760px
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: .92em;
+      color: var(--ink)
+    }
+
+    .stmts {
+      border: 1px solid var(--ink);
+      background: var(--panel);
+      margin-top: 16px;
+      max-width: 760px
+    }
+
+    .stmts .lbl {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 20px 0
+    }
+
+    .stmts table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      font-family: var(--sans)
+    }
+
+    .stmts td {
+      padding: 9px 20px;
+      border-top: 1px solid var(--grid);
+      text-align: left;
+      white-space: normal
+    }
+
+    .stmts td.v {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+      vertical-align: top;
+      color: var(--signal)
+    }
+
+    .stmts tr.f td {
+      background: var(--warn-soft)
+    }
+
+    .stmts tr.f td.v {
+      color: var(--warn)
+    }
+
+    .quote {
+      border-left: 3px solid var(--ink);
+      padding: 4px 0 4px 18px;
+      margin-top: 20px;
+      max-width: 40em;
+      font-style: italic
+    }
+
+    .quote .src {
+      font-style: normal;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px
+    }
+
+    /* explorer */
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin: 18px 0 10px
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .sw {
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--grid);
+      display: inline-block
+    }
+
+    .tblwrap {
+      overflow-x: auto;
+      border: 1px solid var(--ink);
+      background: var(--panel)
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-family: var(--mono);
+      font-size: 13.5px
+    }
+
+    th,
+    td {
+      padding: 7px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--grid);
+      white-space: nowrap
+    }
+
+    th {
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      background: var(--panel)
+    }
+
+    td.case,
+    th.case {
+      text-align: left;
+      width: 100%
+    }
+
+    tr.row {
+      cursor: pointer
+    }
+
+    tr.row:hover td,
+    tr.row.sel td {
+      background: var(--signal-soft)
+    }
+
+    tr.row.hot td.case::after {
+      content: "▲";
+      color: var(--signal);
+      margin-left: 8px;
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    td.fail {
+      color: var(--warn);
+      font-weight: 600
+    }
+
+    td.unst::after {
+      content: "*"
+    }
+
+    #detail {
+      border: 1px solid var(--ink);
+      border-top: 0;
+      background: var(--panel);
+      padding: 18px 22px;
+      font-size: 15px
+    }
+
+    #detail .cfgrow {
+      font-family: var(--mono);
+      font-size: 13.5px;
+      margin-top: 4px
+    }
+
+    #detail .src {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 46em
+    }
+
+    .note {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 10px
+    }
+
+    footer {
+      padding: 40px 0 64px;
+      font-size: 14px;
+      color: var(--muted)
+    }
+
+    footer p {
+      max-width: 46em
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="top">
+    <div class="wrap">
+      <div class="eyebrow"><b>review-sentiment-eval</b> / finding §6.6</div>
+      <div class="eyebrow"><a href="https://github.com/gsiam/review-sentiment-eval">source repository</a></div>
+    </div>
+  </header>
+
+  <div class="wrap hero">
+    <h1>The faithfulness judge ranked the weaker summariser above the stronger one.</h1>
+    <p class="sub">An interactive walkthrough of one finding from an LLM evaluation suite: 34 cases, 4 model
+      configurations, 3 runs each, scored by a Ragas faithfulness judge. All scores and case texts below come from the
+      run data and dataset published in the repository.</p>
+  </div>
+
+  <section id="walkthrough">
+    <div class="wrap">
+      <div class="kicker">The mechanism</div>
+      <h2>What the judge actually caught</h2>
+      <p>The faithfulness metric decomposes a summary into atomic statements, then checks each one against the source.
+        The score is the fraction of the statements that pass.</p>
+      <p>On <code>negative_timeline_shipping</code>, a review about a three-week-late delivery
+        and a refund still missing after 14 days, the local <code>llama3.2</code> summary averaged 1.00 for faithfulness
+        across three runs and the <code>claude-sonnet-4-6</code> summary 0.76. Both pass the 0.70 threshold, judged by
+        the same <code>claude-sonnet-4-6</code> model. The weaker summariser came out ahead here and on four other normal cases, all in <a href="#explorer">the
+          table below</a>, and this 0.24 gap is the widest of them.</p>
+
+      <div class="doc">
+        <div class="lbl">Source text — negative_timeline_shipping</div>
+        <div class="body">Placed the order on March 1st. <mark>The estimated delivery was March 5th.</mark> On March 8th
+          I was told the item hadn't shipped yet. It shipped March 12th and arrived March 19th — nearly three weeks
+          after I ordered. By then I had already bought a replacement elsewhere. I returned it immediately. <mark>The
+            refund still hasn't appeared after 14 days.</mark></div>
+      </div>
+      <div class="doc-note">The highlighted spans mark the source facts behind the strong summary's two failed claims.
+      </div>
+
+      <div class="stmts">
+        <div class="lbl">Strong summariser (claude-sonnet-4-6) — 5/7 = 0.71 this run, mean 0.76</div>
+        <table>
+          <tr>
+            <td>The customer experienced significant shipping delays.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The customer's order arrived nearly three weeks late.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr class="f">
+            <td>The estimated delivery window for the customer's order was 5 days.</td>
+            <td class="v">FAIL</td>
+          </tr>
+          <tr>
+            <td>The customer had already purchased a replacement item by the time the order arrived.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The customer returned the order immediately upon arrival.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr class="f">
+            <td>The customer has been waiting over 14 days for a refund.</td>
+            <td class="v">FAIL</td>
+          </tr>
+          <tr>
+            <td>The refund for the customer's returned order has not yet been processed.</td>
+            <td class="v">PASS</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="stmt">
+        <span class="tag">Why it failed</span>
+        <div class="claim">"The estimated delivery window … was 5 days."</div>
+        <div class="why">The source gives an order date and an estimated delivery date, but states no duration. The
+          model converted the delivery estimate into a span of time rather than a single arrival date.</div>
+      </div>
+
+      <div class="stmt">
+        <span class="tag">Why it failed</span>
+        <div class="claim">"… waiting over 14 days for a refund."</div>
+        <div class="why">The elapsed time is pinned at 14 days. One word, "over", claims that more than 14 have
+          passed, which is something the source does not give.</div>
+      </div>
+
+      <div class="stmts">
+        <div class="lbl">Weak summariser (llama3.2) — 6/6 = 1.00, all three runs</div>
+        <table>
+          <tr>
+            <td>The customer placed an order on March 1st.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The order took nearly three weeks to arrive.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The customer received a shipping update indicating that the item had not shipped yet.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The customer had to return the item.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The customer returned the item due to receiving a replacement elsewhere.</td>
+            <td class="v">PASS</td>
+          </tr>
+          <tr>
+            <td>The refund has not appeared after 14 days.</td>
+            <td class="v">PASS</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="quote">
+        "The metric is working correctly. The Sonnet judge caught genuine hallucinations in the SS output. The issue is
+        not a scoring error — it is a design consequence: faithfulness measures whether every claim is supported by the
+        source, but it does not measure how much of the source is covered."
+        <div class="src">— <a
+            href="https://github.com/gsiam/review-sentiment-eval/blob/main/docs/model-configuration-analysis.md#66-faithfulness-can-rank-a-weaker-summariser-above-a-stronger-one">§6.6,
+            model configuration analysis</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="explorer">
+    <div class="wrap">
+      <div class="kicker">The full picture</div>
+      <h2>Every case, every configuration</h2>
+      <p>Mean faithfulness across 3 runs for each of the 16 review cases under four summariser/judge configurations. Each is a
+        two-letter code where the first letter is the summariser and the second is the judge. <code>S</code> is the
+        strong model (<code>claude-sonnet-4-6</code>) and <code>W</code> is the weak one (<code>llama3.2</code>
+        summariser, <code>mistral</code> judge), so <code>WS</code> means a <code>llama3.2</code> summary graded by a
+        <code>claude-sonnet-4-6</code> judge. Select a row for run detail and the source text.</p>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--signal-soft)"></span> pass (≥ 0.70)</span>
+        <span><span class="sw" style="background:var(--warn-soft)"></span> below threshold</span>
+        <span>* unstable across runs (max − min &gt; 0.2)</span>
+        <span style="color:var(--signal)">▲ weak summariser outscored the strong one under the same Sonnet judge (5 of
+          16 cases)</span>
+      </div>
+      <div class="tblwrap">
+        <table id="tbl" aria-label="Faithfulness scores per case and configuration">
+          <thead>
+            <tr>
+              <th class="case">case</th>
+              <th>SS</th>
+              <th>SW</th>
+              <th>WS</th>
+              <th>WW</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="detail" hidden></div>
+      <p class="note">The suite also tests prompt-injection robustness and judge calibration. Those are separate
+        findings, covered in the full analysis linked below.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>Built from the run data in <a href="https://github.com/gsiam/review-sentiment-eval">review-sentiment-eval</a>.
+        Method: Ragas faithfulness, threshold 0.70, mean of 3 runs per case per configuration. Full write-up, including
+        metric blind spots, judge bias and non-determinism, in the <a
+          href="https://github.com/gsiam/review-sentiment-eval/blob/main/docs/model-configuration-analysis.md">model
+          configuration analysis</a>.</p>
+    </div>
+  </footer>
+
+  <script>
+    const DATA = [{ "id": "positive_baseline", "adversarial": false, "calibration": false, "sentiment": "positive", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "I absolutely love this product! The quality exceeded my expectations. The customer service team was incredibly helpful when I had questions about my order. I've already recommended it to all my friends and family. Five stars!" }, { "id": "negative_baseline", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 0.88, "min": 0.88, "max": 0.88, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "Terrible experience from start to finish. The product arrived damaged and took three weeks to ship. When I tried to get a refund, I was put on hold for over an hour. I will never buy from this company again and I'm filing a complaint with the BBB." }, { "id": "neutral_baseline", "adversarial": false, "calibration": false, "sentiment": "neutral", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "The product works as described. Shipping took the standard amount of time. The packaging was adequate. Price was comparable to other options on the market. Nothing particularly stood out, but nothing was wrong either." }, { "id": "negative_conflicting_logistics", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "The product itself is fantastic - great build quality and works perfectly. However, the delivery was a nightmare. It took 2 weeks longer than promised and customer service was unresponsive. I love the item but probably won't order again due to the logistics issues." }, { "id": "positive_conflicting_logistics", "adversarial": false, "calibration": false, "sentiment": "positive", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 0.83, "min": 0.83, "max": 0.83, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "The product quality is excellent and it works perfectly. Shipping was delayed and customer support took too long to respond, but I'm very happy with the purchase and would definitely order again." }, { "id": "negative_conflicting_borderline", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 0.9, "min": 0.9, "max": 0.9, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "The laptop arrived on time and the build quality is solid \u2014 the keyboard feels good and the display is crisp. On the downside, the battery drains faster than advertised and the fan runs loud under any real load. The software came bloated with trials I had to uninstall. Overall I can see why some people like it but the issues are real enough that I'm not sure I'd buy it again." }, { "id": "negative_numeric_shortfall", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 0.8, "min": 0.8, "max": 0.8, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "Paid \u20ac74.99 in total, which included \u20ac24.99 for expedited shipping. The order still arrived 3 days late. Worse, the package contained only 2 of the 5 items I ordered. Customer service apologized and offered a \u20ac8.50 partial refund \u2014 barely a tenth of what I spent." }, { "id": "negative_attribution_multiparty", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 0.93, "min": 0.8, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 0.75, "min": 0.75, "max": 0.75, "n": 3, "fails": 0, "unstable": false }, "source": "I bought this router from NetGear but it was drop-shipped by a third-party seller called ConnectPlus. The router itself worked fine. The problem was ConnectPlus \u2014 they charged my card twice and took 11 days to respond. NetGear support was actually helpful and escalated it quickly, but ConnectPlus never issued the refund." }, { "id": "positive_negation_double", "adversarial": false, "calibration": false, "sentiment": "positive", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 0.8, "min": 0.8, "max": 0.8, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 0.89, "min": 0.67, "max": 1.0, "n": 3, "fails": 1, "unstable": true }, "WW": { "mean": 0.67, "min": 0.67, "max": 0.67, "n": 3, "fails": 3, "unstable": false }, "source": "I can't say I wasn't impressed. When I first unboxed it I thought the design was unremarkable, but after a week of daily use I can't find a single fault. The battery life is not inconsiderable \u2014 easily two full days \u2014 and performance hasn't let me down once. Not a cheap option, but not one I regret." }, { "id": "negative_negation_rhetorical", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 0.93, "min": 0.8, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "I wish I could say this met my expectations, but it didn't. I'd love to tell you the build quality justifies the price \u2014 it doesn't. If only the customer support had been able to help, but they weren't. It would be great if I could recommend this to anyone. I can't." }, { "id": "negative_distractor_delayed_failure", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "The unboxing experience was genuinely impressive \u2014 premium packaging, a thoughtful quick-start guide, and accessories that felt like they belonged. Setup was smooth and the interface is intuitive. For the first two weeks everything was great and I was recommending it to coworkers. Then the main board failed completely. The replacement unit arrived with a cracked housing. Support has not responded in 18 days. Do not buy this." }, { "id": "negative_timeline_shipping", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 0.76, "min": 0.71, "max": 0.86, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "Placed the order on March 1st. The estimated delivery was March 5th. On March 8th I was told the item hadn't shipped yet. It shipped March 12th and arrived March 19th \u2014 nearly three weeks after I ordered. By then I had already bought a replacement elsewhere. I returned it immediately. The refund still hasn't appeared after 14 days." }, { "id": "negative_conflicting_noise", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 0.86, "min": 0.86, "max": 0.86, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "So I bought this laptop last Tuesday, right after my dog chewed up my old one. I have a Golden Retriever named Buster, he's an absolute menace but I love him. Anyway, I needed something fast for school. It's silver, which matches my fridge for some reason. The OLED screen is absolutely stunning, like I can see every pore on actors' faces when watching movies in 4K. But the battery? An absolute joke. It dies in like 2 hours of just browsing Chrome. Also the keyboard feels super mushy, like typing on mashed potatoes. The trackpad is huge and responsive though. I'll keep it just for the display, but I have to carry my charger everywhere." }, { "id": "positive_conflicting_override", "adversarial": false, "calibration": false, "sentiment": "positive", "SS": { "mean": 0.86, "min": 0.78, "max": 0.9, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 0.96, "min": 0.88, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 0.8, "min": 0.8, "max": 0.8, "n": 3, "fails": 0, "unstable": false }, "source": "My flight to Chicago was delayed by 6 hours because of a mechanical issue. I missed my sister's graduation dinner. Then they lost my checked bag with my suit in it. I was furious. However, the flight attendant, Sarah, was an absolute angel. She saw I was stressed, moved me to a bulkhead seat for free, and kept bringing me complimentary wine and snacks. Best flight ever despite the logistical nightmare." }, { "id": "positive_conflicting_conditional", "adversarial": false, "calibration": false, "sentiment": "positive", "SS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 0.87, "min": 0.6, "max": 1.0, "n": 3, "fails": 1, "unstable": true }, "WS": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "I primarily shoot weddings and sometimes portraits of my cats. My cats are hard to photograph because they don't sit still. The autofocus on this 50mm lens hunts terribly in low light, which is a nightmare for dark reception halls. Wide open at f/1.2, it's a bit soft in the corners. Stop it down to f/2.8 though, and the sharpness is razor-like. Chromatic aberration is well controlled. Heavy, but feels premium." }, { "id": "negative_sarcasm", "adversarial": false, "calibration": false, "sentiment": "negative", "SS": { "mean": 0.71, "min": 0.71, "max": 0.71, "n": 3, "fails": 0, "unstable": false }, "SW": { "mean": 0.83, "min": 0.75, "max": 1.0, "n": 3, "fails": 0, "unstable": true }, "WS": { "mean": 0.0, "min": 0.0, "max": 0.0, "n": 3, "fails": 3, "unstable": false }, "WW": { "mean": 1.0, "min": 1.0, "max": 1.0, "n": 3, "fails": 0, "unstable": false }, "source": "Oh absolutely love how it arrives without the power adapter. Very premium experience for a \u20ac90 product. 10/10 would spend 2 weeks waiting for an accessory to arrive again." }];
+    const HOT = new Set(DATA.filter(d => !d.adversarial && !d.calibration && d.SS && d.WS && d.WS.mean > d.SS.mean).map(d => d.id));
+    const CFGS = ['SS', 'SW', 'WS', 'WW'];
+    const CFGNAMES = { SS: 'sonnet / sonnet', SW: 'sonnet / mistral', WS: 'llama3.2 / sonnet', WW: 'llama3.2 / mistral' };
+    const tb = document.querySelector('#tbl tbody');
+    const detail = document.getElementById('detail');
+    let selected = null;
+
+    function cellHTML(c) {
+      if (!c) return '<td>—</td>';
+      const cls = [c.mean < 0.7 ? 'fail' : '', c.unstable ? 'unst' : ''].join(' ').trim();
+      const bg = c.mean < 0.7 ? 'var(--warn-soft)' : `rgba(14,124,102,${(0.06 + 0.30 * Math.max(0, (c.mean - 0.7) / 0.3)).toFixed(2)})`;
+      return `<td class="${cls}" style="background:${bg}">${c.mean.toFixed(2)}</td>`;
+    }
+
+    DATA.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.className = 'row' + (HOT.has(d.id) ? ' hot' : '');
+      tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      tr.innerHTML = `<td class="case">${d.id}</td>` + CFGS.map(c => cellHTML(d[c])).join('');
+      const open = () => select(d, tr);
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+      tb.appendChild(tr);
+    });
+
+    const STMTS = { "negative_baseline": { "SS": { "score": 0.88, "statements": [["The customer received a damaged product.", 1], ["The customer experienced a three-week shipping delay before receiving the product.", 1], ["The customer attempted to resolve the issue through customer service.", 1], ["The customer was placed on hold for over an hour during the customer service interaction.", 1], ["The customer service interaction resulted in no satisfactory resolution for the customer.", 0], ["The customer is extremely dissatisfied with the experience.", 1], ["The customer plans to never purchase from the company again.", 1], ["The customer plans to file a BBB complaint against the company.", 1]] }, "WS": { "score": 1.0, "statements": [["The customer had a terrible experience.", 1], ["The customer experienced delayed shipping.", 1], ["The customer received a damaged product.", 1], ["The customer encountered poor customer service.", 1], ["The customer refused to make future purchases.", 1]] } }, "negative_conflicting_borderline": { "SS": { "score": 0.9, "statements": [["The customer was pleased with the laptop's build quality.", 1], ["The customer was pleased with the laptop's keyboard.", 1], ["The customer was pleased with the laptop's display.", 1], ["The laptop arrived on time.", 1], ["The customer experienced poor battery life.", 1], ["The customer experienced loud fan noise.", 1], ["The customer experienced excessive bloatware.", 1], ["The customer acknowledged the laptop's appeal.", 1], ["The customer is uncertain about purchasing the laptop again.", 1], ["The customer's feedback indicates overall dissatisfaction with the laptop.", 0]] }, "WS": { "score": 1.0, "statements": [["The customer is satisfied with the laptop's build quality.", 1], ["The customer is satisfied with the laptop's display.", 1], ["The customer has concerns about the laptop's battery life.", 1], ["The customer has concerns about the laptop's fan noise.", 1], ["The concerns about battery life and fan noise may deter the customer from buying the laptop again.", 1]] } }, "negative_negation_rhetorical": { "SS": { "score": 1.0, "statements": [["The customer is deeply dissatisfied with the product.", 1], ["The customer finds that the build quality does not justify the price of the product.", 1], ["Customer support was unhelpful to the customer.", 1], ["Customer support failed to resolve the customer's issues.", 1], ["The customer cannot recommend the product to anyone.", 1]] }, "WS": { "score": 1.0, "statements": [["The product did not meet expectations.", 1], ["The product had poor build quality.", 1], ["The product had inadequate customer support.", 1]] } }, "negative_timeline_shipping": { "SS": { "score": 0.71, "statements": [["The customer experienced significant shipping delays.", 1], ["The customer's order arrived nearly three weeks late.", 1], ["The estimated delivery window for the customer's order was 5 days.", 0], ["The customer had already purchased a replacement item by the time the order arrived.", 1], ["The customer returned the order immediately upon arrival.", 1], ["The customer has been waiting over 14 days for a refund.", 0], ["The refund for the customer's returned order has not yet been processed.", 1]] }, "WS": { "score": 1.0, "statements": [["The customer placed an order on March 1st.", 1], ["The order took nearly three weeks to arrive.", 1], ["The customer received a shipping update indicating that the item had not shipped yet.", 1], ["The customer had to return the item.", 1], ["The customer returned the item due to receiving a replacement elsewhere.", 1], ["The refund has not appeared after 14 days.", 1]] } }, "positive_conflicting_override": { "SS": { "score": 0.9, "statements": [["The customer experienced significant issues during the flight.", 1], ["The flight had a 6-hour delay due to mechanical problems.", 1], ["The customer's luggage was lost.", 1], ["The 6-hour delay and lost luggage caused the customer to miss an important family event.", 0], ["A flight attendant named Sarah provided exceptional service to the customer.", 1], ["Sarah upgraded the customer's seat.", 1], ["Sarah offered the customer complimentary refreshments.", 1], ["The flight had serious logistical failures.", 1], ["The customer describes the flight as the best flight the customer ever had.", 1], ["The customer's positive overall experience was due to the personal attention provided by Sarah.", 1]] }, "WS": { "score": 1.0, "statements": [["The customer's flight to Chicago was delayed due to mechanical issues.", 1], ["The delay caused the customer to miss the customer's sister's graduation dinner.", 1], ["The customer lost the customer's checked bag.", 1], ["Flight attendant Sarah provided excellent service to the customer.", 1], ["Flight attendant Sarah made the customer's experience more enjoyable.", 1], ["Flight attendant Sarah offered the customer complimentary wine and snacks.", 1]] } } };
+    function stmtTable(cfg, model, d) {
+      const s = d.statements;
+      const n = s.filter(x => x[1] === 1).length;
+      const rows = s.map(([t, v]) => `<tr${v ? '' : ' class="f"'}><td>${t}</td><td class="v">${v ? 'PASS' : 'FAIL'}</td></tr>`).join('');
+      return `<div class="stmts" style="margin-top:14px"><div class="lbl">${model} — run 1: ${n}/${s.length} = ${d.score.toFixed(2)}</div><table>${rows}</table></div>`;
+    }
+    function select(d, tr) {
+      if (selected) selected.classList.remove('sel');
+      selected = tr; tr.classList.add('sel');
+      const lines = CFGS.map(c => {
+        const v = d[c];
+        if (!v) return `${c} (${CFGNAMES[c]}): —`;
+        const range = v.min === v.max ? '' : ` [${v.min.toFixed(2)}–${v.max.toFixed(2)}]`;
+        const flags = d.calibration
+          ? [v.fails ? `judge wrong ${v.fails}/3` : '', v.unstable ? 'unstable' : ''].filter(Boolean).join(', ')
+          : [v.mean < 0.7 ? 'below threshold' : '', v.unstable ? 'unstable' : '', v.fails ? `fails ${v.fails}/3` : ''].filter(Boolean).join(', ');
+        return `<div class="cfgrow"><b>${c}</b> (${CFGNAMES[c]}): mean ${v.mean.toFixed(2)}${range}${flags ? ' · ' + flags : ''}</div>`;
+      }).join('');
+      const ev = STMTS[d.id];
+      const stmts = ev ? stmtTable('SS', 'Strong summariser (claude-sonnet-4-6)', ev.SS) + stmtTable('WS', 'Weak summariser (llama3.2)', ev.WS) + `<div class="note">Statement decomposition and judge verdicts from the run 1 logs; run 1 scores may differ from the 3-run means above.</div>` : '';
+      detail.hidden = false;
+      detail.innerHTML = `<b style="font-family:var(--mono)">${d.id}</b>${d.sentiment ? ` · expected sentiment: ${d.sentiment}` : ''}${lines}${d.source ? `<div class="src">${d.source}</div>` : ''}${stmts}`;
+      detail.scrollIntoView({ block: 'nearest' });
+    }
+  </script>
+</body>
+
+</html>
