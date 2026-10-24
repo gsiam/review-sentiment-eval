@@ -18,7 +18,7 @@ Plan (all steps complete; Deferred items remain): `~/.claude/plans/llm-eval-mode
 cd review-sentiment-eval
 python3.10 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"   # includes ruff, mypy, pytest-cov
+pip install -c requirements.txt -e ".[dev]"   # includes ruff, mypy, pytest-cov; versions pinned in requirements.txt
 
 # Environment
 cp .env.example .env

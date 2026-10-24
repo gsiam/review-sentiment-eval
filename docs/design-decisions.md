@@ -92,3 +92,18 @@ Run-level instability and universal miss look similar in aggregate but require d
 ## Judge vs summariser failure mode separation
 
 `docs/exploratory-findings.md` documents failure modes in the *summariser* prompt — acting on any finding there changes the system under test and requires a full re-run. Judge-side failure modes (e.g., `spec_simplification` false positives via hyperliteral NLI) belong in `docs/model-configuration-analysis.md`. Do not move judge behaviour analysis into the exploratory findings document. See §4 of the analysis doc for the mechanism and data.
+
+## Pinned dependency constraints
+
+`requirements.txt` is a pip constraints file generated from `.venv` with `pip freeze --all --exclude-editable`. It serves two purposes:
+
+- pinning the versions that installs resolve to
+- giving vulnerability scanners such as osv-scanner the versions actually in use, since they cannot read `pyproject.toml` without a lockfile
+
+**Installing.** Use `pip install -c requirements.txt -e ".[extra]"`. Constraints apply only to the packages the chosen extras require, whereas `-r` would install the whole set without the project itself.
+
+**Pins that installs leave unused.** The file includes pip, setuptools and `pytest-html` with its dependency `pytest-metadata`, none of which the project's dependencies or extras pull in. Installs ignore these four, and they stay in the file for the scanner.
+
+**Regenerating.** Freeze only from a venv with every extra and `pytest-html` installed, because a freeze of a partial venv drops pins.
+
+**Python version.** The pins are valid for Python 3.10 only.

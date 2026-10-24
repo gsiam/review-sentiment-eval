@@ -189,19 +189,27 @@ Supporting directories:
 python3.10 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies
-pip install -e .
+# Install dependencies at the versions pinned in requirements.txt
+pip install -c requirements.txt -e .
 
 # For local model support (Ollama)
 # Requires Ollama running locally with models pulled (e.g. ollama pull llama3.2)
-pip install -e ".[local]"
+pip install -c requirements.txt -e ".[local]"
 
 # For regenerating analysis charts (scripts/generate_*.py)
-pip install -e ".[docs]"
+pip install -c requirements.txt -e ".[docs]"
 
 # Configure API key
 cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
+```
+
+### Updating the pinned versions
+
+This is a maintainer step and not part of setup. After adding or upgrading a package, regenerate `requirements.txt` from a Python 3.10 `.venv` that has every extra installed (`.[dev,local,docs]`) as well as `pytest-html`; a freeze of a partial venv drops pins.
+
+```bash
+.venv/bin/python -m pip freeze --all --exclude-editable > requirements.txt
 ```
 
 ## Running tests
