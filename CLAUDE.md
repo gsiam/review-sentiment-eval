@@ -16,7 +16,7 @@ Plan (all steps complete; Deferred items remain): `~/.claude/plans/llm-eval-mode
 ```bash
 # Setup
 cd review-sentiment-eval
-python3.10 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -c requirements.txt -e ".[dev]"   # includes ruff, mypy, pytest-cov; versions pinned in requirements.txt
 
@@ -75,7 +75,7 @@ Each model configuration gets **3 fresh runs** on the full dataset. Report score
 
 ### Project-Specific
 
-- Python 3.10+
+- Python 3.11+
 - Pytest markers: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.adversarial`, `@pytest.mark.ragas_ci`
 
 ### Model IDs

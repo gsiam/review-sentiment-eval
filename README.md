@@ -186,7 +186,7 @@ Supporting directories:
 
 ```bash
 # Create virtual environment
-python3.10 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies at the versions pinned in requirements.txt
@@ -206,7 +206,7 @@ cp .env.example .env
 
 ### Updating the pinned versions
 
-This is a maintainer step and not part of setup. After adding or upgrading a package, regenerate `requirements.txt` from a Python 3.10 `.venv` that has every extra installed (`.[dev,local,docs]`) as well as `pytest-html`; a freeze of a partial venv drops pins.
+This is a maintainer step and not part of setup. After adding or upgrading a package, regenerate `requirements.txt` from a Python 3.11 `.venv` that has every extra installed (`.[dev,local,docs]`) as well as `pytest-html`; a freeze of a partial venv drops pins.
 
 ```bash
 .venv/bin/python -m pip freeze --all --exclude-editable > requirements.txt

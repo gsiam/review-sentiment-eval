@@ -106,4 +106,4 @@ Run-level instability and universal miss look similar in aggregate but require d
 
 **Regenerating.** Freeze only from a venv with every extra and `pytest-html` installed, because a freeze of a partial venv drops pins.
 
-**Python version.** The pins are valid for Python 3.10 only.
+**Python version.** The pins are valid for Python 3.11 only.

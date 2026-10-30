@@ -7,7 +7,7 @@ name = "review-sentiment-eval"
 version = "0.1.0"
 description = "Evaluation suite for LLM-based customer review sentiment analysis"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.50.0",
     "langchain>=0.3.0",
@@ -57,4 +57,4 @@ omit = ["tests/*", "conftest.py"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
